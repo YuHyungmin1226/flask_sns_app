@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Flask SNS 포터블 앱 실행 파일
 USB에 복사하여 어디서든 실행할 수 있는 개인 SNS 애플리케이션
