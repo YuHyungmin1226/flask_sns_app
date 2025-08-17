@@ -41,17 +41,24 @@ class S3Manager:
             # S3 키 (경로) 생성
             s3_key = f"{folder}/{unique_filename}"
             
-            # 파일 업로드 (BytesIO 사용)
+            # 파일 업로드 (BytesIO 사용) - 타임아웃 방지
             from io import BytesIO
             file_stream = BytesIO(file_content)
             
+            # 업로드 설정 최적화
             self.s3_client.upload_fileobj(
                 file_stream,
                 self.bucket_name,
                 s3_key,
                 ExtraArgs={
                     'ContentType': self.get_content_type(filename),
-                    'ACL': 'public-read'  # 공개 읽기 권한
+                    'ACL': 'public-read',  # 공개 읽기 권한
+                    'CacheControl': 'max-age=31536000'  # 캐시 최적화
+                },
+                Config={
+                    'connect_timeout': 30,
+                    'read_timeout': 60,
+                    'retries': {'max_attempts': 3}
                 }
             )
             

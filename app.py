@@ -326,11 +326,12 @@ def new_post():
                 
                 # S3에 파일 업로드
                 try:
+                    print(f"📤 파일 업로드 시작: {file.filename} ({file.content_length} bytes)")
                     file_info = s3_manager.upload_file(file, file.filename)
-                    print(f"S3 업로드된 파일 정보: {file_info}")
+                    print(f"✅ S3 업로드 완료: {file_info['file_url']}")
                     uploaded_files.append(file_info)
                 except Exception as e:
-                    print(f"S3 파일 업로드 중 오류: {e}")
+                    print(f"❌ S3 파일 업로드 중 오류: {e}")
                     import traceback
                     traceback.print_exc()
                     flash(f'파일 업로드 중 오류가 발생했습니다: {str(e)}', 'error')

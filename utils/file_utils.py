@@ -16,7 +16,7 @@ def get_korean_time():
 
 # 파일 업로드 설정
 UPLOAD_FOLDER = 'uploads'
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB로 줄임 (타임아웃 방지)
 THUMBNAIL_SIZE = (300, 300)
 
 # 허용된 파일 타입
