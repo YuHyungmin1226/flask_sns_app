@@ -252,8 +252,8 @@
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
+                {% if current_user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
-                    {% if current_user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">
                             <i class="bi bi-house"></i> 홈
@@ -276,11 +276,11 @@
                         </a>
                     </li>
                     {% endif %}
-                    {% endif %}
                 </ul>
+                {% endif %}
                 
+                {% if current_user.is_authenticated %}
                 <ul class="navbar-nav">
-                    {% if current_user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> {{ current_user.username }}
@@ -298,7 +298,15 @@
                             </a></li>
                         </ul>
                     </li>
-                    {% else %}
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" title="다크모드 토글">
+                            <i class="bi bi-moon-stars"></i>
+                            <span class="sr-only">다크모드 토글</span>
+                        </button>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">
                             <i class="bi bi-box-arrow-in-right"></i> 로그인
@@ -309,13 +317,14 @@
                             <i class="bi bi-person-plus"></i> 회원가입
                         </a>
                     </li>
-                    {% endif %}
                     <li class="nav-item">
-                        <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()">
+                        <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" title="다크모드 토글">
                             <i class="bi bi-moon-stars"></i>
+                            <span class="sr-only">다크모드 토글</span>
                         </button>
                     </li>
                 </ul>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -327,7 +336,7 @@
                 {% for category, message in messages %}
                     <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                                 <button type="button" class="btn-close" data-bs-dismiss="alert" title="알림 닫기"></button>
                     </div>
                 {% endfor %}
             {% endif %}
