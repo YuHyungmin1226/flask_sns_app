@@ -13,16 +13,22 @@ from utils.file_utils import save_file, validate_file, get_file_info_from_json, 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
 
-# 포터블 버전 대응 - 데이터베이스 경로 설정
-if getattr(sys, 'frozen', False):
-    # PyInstaller로 빌드된 경우
-    current_dir = os.path.dirname(sys.executable)
+# Railway 배포 대응 - 데이터베이스 설정
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    # Railway PostgreSQL 사용
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
-    # 일반 Python 실행의 경우
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 로컬 개발용 SQLite
+    if getattr(sys, 'frozen', False):
+        current_dir = os.path.dirname(sys.executable)
+    else:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(current_dir, 'sns.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
-db_path = os.path.join(current_dir, 'sns.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -119,6 +125,16 @@ def reset_login_attempts(user):
     user.login_attempts = 0
     user.locked_until = None
     db.session.commit()
+
+# Railway 슬립모드 방지용 핑 엔드포인트
+@app.route('/ping')
+def ping():
+    """Railway 슬립모드 방지용 핑 엔드포인트"""
+    return jsonify({
+        'status': 'alive',
+        'timestamp': datetime.now(KST).isoformat(),
+        'message': 'Flask SNS is running!'
+    })
 
 # 라우트
 @app.route('/')
@@ -257,38 +273,38 @@ def new_post():
         
         print(f"최종 URL 미리보기: {url_previews}")
         
-        # 파일 업로드 처리
+        # Railway 배포용 - 파일 업로드 임시 비활성화
         uploaded_files = []
-        files = request.files.getlist('files')
-        
-        print(f"업로드된 파일 수: {len(files)}")
-        print(f"request.files: {request.files}")
-        print(f"request.form: {request.form}")
-        
-        for file in files:
-            if file and file.filename:
-                print(f"파일명: {file.filename}")
-                print(f"파일 크기: {file.content_length}")
-                print(f"파일 타입: {file.content_type}")
-                
-                # 파일 유효성 검사
-                validation_errors = validate_file(file)
-                if validation_errors:
-                    for error in validation_errors:
-                        flash(error, 'error')
-                    return render_template('new_post.html')
-                
-                # 파일 저장
-                try:
-                    file_info = save_file(file, file.filename)
-                    print(f"저장된 파일 정보: {file_info}")
-                    uploaded_files.append(file_info)
-                except Exception as e:
-                    print(f"파일 저장 오류: {e}")
-                    import traceback
-                    traceback.print_exc()
-                    flash(f'파일 업로드 중 오류가 발생했습니다: {str(e)}', 'error')
-                    return render_template('new_post.html')
+        # files = request.files.getlist('files')
+        # 
+        # print(f"업로드된 파일 수: {len(files)}")
+        # print(f"request.files: {request.files}")
+        # print(f"request.form: {request.form}")
+        # 
+        # for file in files:
+        #     if file and file.filename:
+        #         print(f"파일명: {file.filename}")
+        #         print(f"파일 크기: {file.content_length}")
+        #         print(f"파일 타입: {file.content_type}")
+        #         
+        #         # 파일 유효성 검사
+        #         validation_errors = validate_file(file)
+        #         if validation_errors:
+        #             for error in validation_errors:
+        #                 flash(error, 'error')
+        #             return render_template('new_post.html')
+        #         
+        #         # 파일 저장
+        #         try:
+        #             file_info = save_file(file, file.filename)
+        #             print(f"저장된 파일 정보: {file_info}")
+        #             uploaded_files.append(file_info)
+        #         except Exception as e:
+        #             print(f"파일 업로드 중 오류: {e}")
+        #             import traceback
+        #             traceback.print_exc()
+        #             flash(f'파일 업로드 중 오류가 발생했습니다: {str(e)}', 'error')
+        #             return render_template('new_post.html')
         
         post = Post(
             content=content,
@@ -345,105 +361,13 @@ def delete_post(post_id):
         flash('삭제 권한이 없습니다.', 'error')
         return redirect(url_for('index'))
     
-    # 첨부된 파일들 삭제
-    deleted_files = []
-    try:
-        if post.files and post.files != '[]':
-            print(f"게시글 파일 정보: {post.files}")
-            files = get_file_info_from_json(post.files)
-            print(f"파싱된 파일 정보: {files}")
-            # 포터블 버전 대응
-            if getattr(sys, 'frozen', False):
-                # PyInstaller로 빌드된 경우
-                current_dir = os.path.dirname(sys.executable)
-            else:
-                # 일반 Python 실행의 경우
-                current_dir = os.path.dirname(os.path.abspath(__file__))
-            print(f"현재 디렉터리: {current_dir}")
-            
-            for file_info in files:
-                print(f"처리 중인 파일: {file_info}")
-                if 'saved_name' in file_info:
-                    # 파일 타입별 폴더 결정
-                    file_ext = os.path.splitext(file_info['saved_name'])[1].lower()
-                    print(f"파일 확장자: {file_ext}")
-                    type_folders = {
-                        '.jpg': 'images', '.jpeg': 'images', '.png': 'images', '.gif': 'images', '.webp': 'images', '.bmp': 'images',
-                        '.mp4': 'videos', '.avi': 'videos', '.mov': 'videos', '.wmv': 'videos', '.flv': 'videos', '.mkv': 'videos',
-                        '.mp3': 'audio', '.wav': 'audio', '.flac': 'audio', '.ogg': 'audio', '.m4a': 'audio',
-                        '.pdf': 'documents', '.doc': 'documents', '.docx': 'documents', '.txt': 'documents', '.rtf': 'documents',
-                        '.zip': 'archives', '.rar': 'archives', '.7z': 'archives', '.tar': 'archives', '.gz': 'archives'
-                    }
-                    folder = type_folders.get(file_ext, 'documents')
-                    print(f"결정된 폴더: {folder}")
-                    
-                    file_path = os.path.join(current_dir, 'uploads', folder, file_info['saved_name'])
-                    print(f"삭제할 파일 경로: {file_path}")
-                    print(f"파일 존재 여부: {os.path.exists(file_path)}")
-                    
-                    if os.path.exists(file_path):
-                        try:
-                            os.remove(file_path)
-                            deleted_files.append(file_path)
-                            print(f"✅ 파일 삭제됨: {file_path}")
-                        except Exception as file_error:
-                            print(f"❌ 파일 삭제 실패: {file_path} - {file_error}")
-                    else:
-                        print(f"❌ 파일이 존재하지 않음: {file_path}")
-                    
-                    # 썸네일도 삭제 (있는 경우)
-                    if 'thumbnail_path' in file_info and file_info['thumbnail_path']:
-                        # 썸네일 경로가 절대 경로인지 상대 경로인지 확인
-                        if os.path.isabs(file_info['thumbnail_path']):
-                            thumbnail_path = file_info['thumbnail_path']
-                        else:
-                            thumbnail_path = os.path.join(current_dir, file_info['thumbnail_path'])
-                        
-                        if os.path.exists(thumbnail_path):
-                            try:
-                                os.remove(thumbnail_path)
-                                deleted_files.append(thumbnail_path)
-                                print(f"썸네일 삭제됨: {thumbnail_path}")
-                            except Exception as thumb_error:
-                                print(f"썸네일 삭제 실패: {thumbnail_path} - {thumb_error}")
-                        else:
-                            print(f"썸네일 파일이 존재하지 않음: {thumbnail_path}")
-        else:
-            print("게시글에 첨부된 파일이 없습니다.")
-    except Exception as e:
-        print(f"파일 삭제 중 오류: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    print(f"총 삭제된 파일 수: {len(deleted_files)}")
-    print(f"삭제된 파일 목록: {deleted_files}")
-    
-    # 삭제 실패한 파일이 있는지 확인
-    failed_files = []
-    if post.files and post.files != '[]':
-        files = get_file_info_from_json(post.files)
-        for file_info in files:
-            if 'saved_name' in file_info:
-                file_ext = os.path.splitext(file_info['saved_name'])[1].lower()
-                type_folders = {
-                    '.jpg': 'images', '.jpeg': 'images', '.png': 'images', '.gif': 'images', '.webp': 'images', '.bmp': 'images',
-                    '.mp4': 'videos', '.avi': 'videos', '.mov': 'videos', '.wmv': 'videos', '.flv': 'videos', '.mkv': 'videos',
-                    '.mp3': 'audio', '.wav': 'audio', '.flac': 'audio', '.ogg': 'audio', '.m4a': 'audio',
-                    '.pdf': 'documents', '.doc': 'documents', '.docx': 'documents', '.txt': 'documents', '.rtf': 'documents',
-                    '.zip': 'archives', '.rar': 'archives', '.7z': 'archives', '.tar': 'archives', '.gz': 'archives'
-                }
-                folder = type_folders.get(file_ext, 'documents')
-                file_path = os.path.join(current_dir, 'uploads', folder, file_info['saved_name'])
-                if os.path.exists(file_path):
-                    failed_files.append(file_info['original_name'])
+    # Railway 배포용 - 파일 삭제 임시 비활성화
+    # 첨부된 파일들 삭제 로직은 현재 비활성화됨
     
     db.session.delete(post)
     db.session.commit()
     
-    if failed_files:
-        flash(f'게시글이 삭제되었습니다. 일부 파일({", ".join(failed_files)})은 사용 중이어서 삭제되지 않았습니다. 브라우저에서 재생을 중지하고 다시 시도해주세요.', 'warning')
-    else:
-        flash('게시글이 삭제되었습니다.', 'success')
+    flash('게시글이 삭제되었습니다.', 'success')
     
     return redirect(url_for('index'))
 
@@ -482,101 +406,19 @@ def delete_user(user_id):
     flash('사용자가 삭제되었습니다.', 'success')
     return redirect(url_for('admin'))
 
-# 파일 다운로드
+# 파일 다운로드 (Railway 배포용 - 임시 비활성화)
 @app.route('/download/<path:filename>')
 def download_file(filename):
-    """파일 다운로드/표시"""
-    try:
-        # 파일 확장자 확인
-        file_ext = os.path.splitext(filename)[1].lower()
-        
-        # 파일 타입별 폴더 결정
-        type_folders = {
-            '.jpg': 'images', '.jpeg': 'images', '.png': 'images', '.gif': 'images', '.webp': 'images', '.bmp': 'images',
-            '.mp4': 'videos', '.avi': 'videos', '.mov': 'videos', '.wmv': 'videos', '.flv': 'videos', '.mkv': 'videos',
-            '.mp3': 'audio', '.wav': 'audio', '.flac': 'audio', '.ogg': 'audio', '.m4a': 'audio',
-            '.pdf': 'documents', '.doc': 'documents', '.docx': 'documents', '.txt': 'documents', '.rtf': 'documents',
-            '.zip': 'archives', '.rar': 'archives', '.7z': 'archives', '.tar': 'archives', '.gz': 'archives'
-        }
-        
-        folder = type_folders.get(file_ext, 'documents')
-        
-        # 절대 경로로 파일 찾기 (포터블 버전 대응)
-        if getattr(sys, 'frozen', False):
-            # PyInstaller로 빌드된 경우
-            current_dir = os.path.dirname(sys.executable)
-        else:
-            # 일반 Python 실행의 경우
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        file_path = os.path.join(current_dir, 'uploads', folder, filename)
-        
-        if not os.path.exists(file_path):
-            flash('파일을 찾을 수 없습니다.', 'error')
-            return redirect(url_for('index'))
-        
-        # 이미지, 비디오, 오디오 파일은 브라우저에서 직접 표시
-        media_extensions = {
-            '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp',  # 이미지
-            '.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv',    # 비디오
-            '.mp3', '.wav', '.flac', '.ogg', '.m4a'            # 오디오
-        }
-        
-        if file_ext in media_extensions:
-            # 미디어 파일은 브라우저에서 직접 표시
-            return send_from_directory(os.path.join(current_dir, 'uploads', folder), filename, as_attachment=False)
-        else:
-            # 기타 파일은 다운로드
-            return send_from_directory(os.path.join(current_dir, 'uploads', folder), filename, as_attachment=True)
-            
-    except Exception as e:
-        flash('파일 다운로드 중 오류가 발생했습니다.', 'error')
-        return redirect(url_for('index'))
+    """파일 다운로드/표시 (Railway 배포용 - 임시 비활성화)"""
+    flash('파일 업로드 기능은 현재 비활성화되어 있습니다.', 'info')
+    return redirect(url_for('index'))
 
-# 파일 삭제 (게시글 작성자만)
+# 파일 삭제 (Railway 배포용 - 임시 비활성화)
 @app.route('/post/<int:post_id>/file/<filename>/delete', methods=['POST'])
 @login_required
 def delete_post_file(post_id, filename):
-    """게시글의 특정 파일 삭제"""
-    post = Post.query.get_or_404(post_id)
-    
-    if post.author_id != current_user.id:
-        flash('삭제 권한이 없습니다.', 'error')
-        return redirect(url_for('view_post', post_id=post_id))
-    
-    try:
-        # 파일 정보 가져오기
-        files = get_file_info_from_json(post.files)
-        
-        # 해당 파일 찾기
-        file_to_delete = None
-        for file_info in files:
-            if file_info['saved_name'] == filename:
-                file_to_delete = file_info
-                break
-        
-        if not file_to_delete:
-            flash('파일을 찾을 수 없습니다.', 'error')
-            return redirect(url_for('view_post', post_id=post_id))
-        
-        # 파일 삭제
-        if delete_file(file_to_delete['file_path']):
-            # 썸네일도 삭제
-            if file_to_delete.get('thumbnail_path'):
-                delete_file(file_to_delete['thumbnail_path'])
-            
-            # 파일 목록에서 제거
-            files.remove(file_to_delete)
-            post.files = json.dumps(files, ensure_ascii=False)
-            db.session.commit()
-            
-            flash('파일이 삭제되었습니다.', 'success')
-        else:
-            flash('파일 삭제에 실패했습니다.', 'error')
-            
-    except Exception as e:
-        flash('파일 삭제 중 오류가 발생했습니다.', 'error')
-    
+    """게시글의 특정 파일 삭제 (Railway 배포용 - 임시 비활성화)"""
+    flash('파일 업로드 기능은 현재 비활성화되어 있습니다.', 'info')
     return redirect(url_for('view_post', post_id=post_id))
 
 # API 엔드포인트
@@ -595,4 +437,6 @@ def api_posts():
     return jsonify(posts_data)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    # Railway 배포용 포트 설정
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port) 
