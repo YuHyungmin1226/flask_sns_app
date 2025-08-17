@@ -33,10 +33,11 @@
                         {% endif %}
                         {% if current_user.id == post.author_id %}
                             <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" 
-                                  style="display: inline;" 
+                                  class="inline-form" 
                                   onsubmit="return confirm('정말 삭제하시겠습니까?')">
-                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="게시글 삭제">
                                     <i class="bi bi-trash"></i>
+                                    <span class="sr-only">게시글 삭제</span>
                                 </button>
                             </form>
                         {% endif %}
@@ -83,26 +84,28 @@
                                                         {% endif %}
                                                     </small>
                                                 </div>
-                                                <a href="{{ url_for('download_file', filename=file.saved_name) }}" class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ url_for('download_file', filename=file.saved_name) }}" class="btn btn-sm btn-outline-primary" title="파일 다운로드">
                                                     <i class="bi bi-download"></i>
+                                                    <span class="sr-only">파일 다운로드</span>
                                                 </a>
                                             </div>
                                             
                                                                                            <!-- 이미지 미리보기 (작은 크기) -->
                                                {% if file.file_type == 'image' %}
                                                <div class="mt-2">
-                                                   <img src="{{ url_for('download_file', filename=file.saved_name) }}" 
-                                                        class="img-fluid rounded" 
-                                                        alt="{{ file.original_name }}"
-                                                        style="cursor: pointer;"
-                                                        onclick="openImageModal('{{ url_for('download_file', filename=file.saved_name) }}', '{{ file.original_name }}')">
+                                                                                                   <img src="{{ url_for('download_file', filename=file.saved_name) }}" 
+                                                     class="img-fluid rounded cursor-pointer" 
+                                                     alt="{{ file.original_name }}"
+                                                     data-image-url="{{ url_for('download_file', filename=file.saved_name) }}"
+                                                     data-image-name="{{ file.original_name }}"
+                                                     title="이미지 클릭하여 확대보기">
                                                </div>
                                                {% endif %}
                                             
                                                                                       <!-- 비디오 재생 (작은 크기) -->
                                           {% if file.file_type == 'video' %}
                                           <div class="mt-2">
-                                              <video controls class="w-100 rounded" style="width: 100%; max-height: 400px; object-fit: contain;">
+                                              <video controls class="w-100 rounded video-responsive">
                                                   <source src="{{ url_for('download_file', filename=file.saved_name) }}" type="{{ file.mime_type }}">
                                               </video>
                                           </div>
@@ -131,10 +134,11 @@
                             {% for preview in url_previews %}
                                 {% if preview.type == 'youtube' %}
                                     <div class="youtube-preview mb-3">
-                                        <div style="position: relative;">
+                                        <div class="youtube-preview-container">
                                             <img src="{{ preview.thumbnail_url }}" alt="{{ preview.title }}">
-                                            <button class="play-button" onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')">
+                                            <button class="play-button" onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')" title="유튜브 비디오 재생">
                                                 <i class="bi bi-play-fill"></i>
+                                                <span class="sr-only">유튜브 비디오 재생</span>
                                             </button>
                                             <div class="youtube-info">
                                                 <h6>{{ preview.title }}</h6>
@@ -154,7 +158,7 @@
                                     <div class="url-preview mb-3">
                                         {% if preview.image_url %}
                                         <div class="mb-3">
-                                            <img src="{{ preview.image_url }}" class="img-fluid rounded" alt="{{ preview.title }}" style="max-width: 300px; max-height: 200px; object-fit: cover;">
+                                            <img src="{{ preview.image_url }}" class="img-fluid rounded url-preview-image" alt="{{ preview.title }}">
                                         </div>
                                         {% endif %}
                                         <div>
@@ -257,6 +261,17 @@ function openImageModal(imageSrc, imageName) {
     
     modal.show();
 }
+
+// 이미지 클릭 이벤트 처리
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('img[data-image-url]').forEach(function(img) {
+        img.addEventListener('click', function() {
+            const imageUrl = this.getAttribute('data-image-url');
+            const imageName = this.getAttribute('data-image-name');
+            openImageModal(imageUrl, imageName);
+        });
+    });
+});
 
 // 유튜브 비디오 재생 함수
 function playYouTubeVideo(url, title) {

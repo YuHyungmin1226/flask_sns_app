@@ -23,13 +23,14 @@
                         </span>
                     {% endif %}
                     {% if current_user.id == post.author_id %}
-                        <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" 
-                              style="display: inline;" 
-                              onsubmit="return confirm('정말 삭제하시겠습니까?')">
-                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
+                                                    <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" 
+                                  class="inline-form" 
+                                  onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="게시글 삭제">
+                                    <i class="bi bi-trash"></i>
+                                    <span class="sr-only">게시글 삭제</span>
+                                </button>
+                            </form>
                     {% endif %}
                 </div>
             </div>
@@ -62,15 +63,15 @@
                                                     첨부 파일
                                                 {% endif %}
                                             </div>
-                                            <small class="text-muted">
-                                                                                                    {% if file.size < 1024 %}
-                                                        {{ file.size }} B
-                                                    {% elif file.size < 1024 * 1024 %}
-                                                        {{ (file.size / 1024)|round(1) }} KB
-                                                    {% else %}
-                                                        {{ (file.size / 1024 / 1024)|round(1) }} MB
-                                                    {% endif %}
-                                            </small>
+                                                                                         <small class="text-muted">
+                                                 {% if file.size < 1024 %}
+                                                     {{ file.size }} B
+                                                 {% elif file.size < 1024 * 1024 %}
+                                                     {{ (file.size / 1024)|round(1) }} KB
+                                                 {% else %}
+                                                     {{ (file.size / 1024 / 1024)|round(1) }} MB
+                                                 {% endif %}
+                                             </small>
                                             <div class="mt-2">
                                                 <a href="{{ url_for('download_file', filename=file.saved_name) }}" class="btn btn-sm btn-primary me-2">
                                                     <i class="bi bi-download"></i> 다운로드

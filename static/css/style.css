@@ -1,0 +1,39 @@
+/* 커스텀 스타일 */
+
+/* 인라인 스타일 대체 */
+.inline-form {
+    display: inline;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.video-responsive {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+}
+
+.url-preview-image {
+    max-width: 300px;
+    max-height: 200px;
+    object-fit: cover;
+}
+
+.youtube-preview-container {
+    position: relative;
+}
+
+/* 접근성 개선을 위한 스타일 */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
