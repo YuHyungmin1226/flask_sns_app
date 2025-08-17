@@ -74,12 +74,12 @@
                                                         {% endif %}
                                                     </div>
                                                     <small class="text-muted">
-                                                        {% if file.file_size < 1024 %}
-                                                            {{ file.file_size }} B
-                                                        {% elif file.file_size < 1024 * 1024 %}
-                                                            {{ (file.file_size / 1024)|round(1) }} KB
+                                                        {% if file.size < 1024 %}
+                                                            {{ file.size }} B
+                                                        {% elif file.size < 1024 * 1024 %}
+                                                            {{ (file.size / 1024)|round(1) }} KB
                                                         {% else %}
-                                                            {{ (file.file_size / 1024 / 1024)|round(1) }} MB
+                                                            {{ (file.size / 1024 / 1024)|round(1) }} MB
                                                         {% endif %}
                                                     </small>
                                                 </div>

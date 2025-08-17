@@ -63,13 +63,13 @@
                                                 {% endif %}
                                             </div>
                                             <small class="text-muted">
-                                                {% if file.file_size < 1024 %}
-                                                    {{ file.file_size }} B
-                                                {% elif file.file_size < 1024 * 1024 %}
-                                                    {{ (file.file_size / 1024)|round(1) }} KB
-                                                {% else %}
-                                                    {{ (file.file_size / 1024 / 1024)|round(1) }} MB
-                                                {% endif %}
+                                                                                                    {% if file.size < 1024 %}
+                                                        {{ file.size }} B
+                                                    {% elif file.size < 1024 * 1024 %}
+                                                        {{ (file.size / 1024)|round(1) }} KB
+                                                    {% else %}
+                                                        {{ (file.size / 1024 / 1024)|round(1) }} MB
+                                                    {% endif %}
                                             </small>
                                             <div class="mt-2">
                                                 <a href="{{ url_for('download_file', filename=file.saved_name) }}" class="btn btn-sm btn-primary me-2">
