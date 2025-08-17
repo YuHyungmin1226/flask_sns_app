@@ -27,6 +27,10 @@ class S3Manager:
     def upload_file(self, file, filename):
         """파일을 S3에 업로드"""
         try:
+            # 파일 내용을 메모리에 복사 (스트림 닫힘 방지)
+            file.seek(0)
+            file_content = file.read()
+            
             # 고유한 파일명 생성
             unique_filename = self.generate_unique_filename(filename)
             
@@ -37,9 +41,12 @@ class S3Manager:
             # S3 키 (경로) 생성
             s3_key = f"{folder}/{unique_filename}"
             
-            # 파일 업로드
+            # 파일 업로드 (BytesIO 사용)
+            from io import BytesIO
+            file_stream = BytesIO(file_content)
+            
             self.s3_client.upload_fileobj(
-                file,
+                file_stream,
                 self.bucket_name,
                 s3_key,
                 ExtraArgs={
@@ -49,7 +56,7 @@ class S3Manager:
             )
             
             # 파일 URL 생성
-            file_url = f"https://{self.bucket_name}.s3.ap-northeast-2.amazonaws.com/{s3_key}"
+            file_url = f"https://{self.bucket_name}.s3.ap-southeast-2.amazonaws.com/{s3_key}"
             
             # 파일 정보 반환
             file_info = {
@@ -58,7 +65,7 @@ class S3Manager:
                 'file_type': file_type,
                 'file_url': file_url,
                 's3_key': s3_key,
-                'size': self.get_file_size(file),
+                'size': len(file_content),
                 'uploaded_at': get_korean_time().isoformat()
             }
             
@@ -68,6 +75,9 @@ class S3Manager:
         except ClientError as e:
             print(f"❌ S3 업로드 실패: {e}")
             raise Exception(f"S3 업로드 실패: {str(e)}")
+        except Exception as e:
+            print(f"❌ 파일 업로드 오류: {e}")
+            raise Exception(f"파일 업로드 오류: {str(e)}")
     
     def delete_file(self, s3_key):
         """S3에서 파일 삭제"""
@@ -150,12 +160,9 @@ class S3Manager:
         
         return content_types.get(ext, 'application/octet-stream')
     
-    def get_file_size(self, file):
+    def get_file_size(self, file_content):
         """파일 크기 반환 (바이트)"""
-        file.seek(0, 2)  # 파일 끝으로 이동
-        size = file.tell()
-        file.seek(0)  # 파일 시작으로 복귀
-        return size
+        return len(file_content)
     
     def get_file_size_display(self, size_bytes):
         """파일 크기를 읽기 쉬운 형태로 변환"""
