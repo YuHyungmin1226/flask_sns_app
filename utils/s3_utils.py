@@ -16,13 +16,25 @@ def get_korean_time():
 class S3Manager:
     def __init__(self):
         """S3 매니저 초기화"""
+        from botocore.config import Config
+        
+        # S3 클라이언트 설정
+        config = Config(
+            connect_timeout=30,
+            read_timeout=60,
+            retries={'max_attempts': 3}
+        )
+        
         self.s3_client = boto3.client(
             's3',
             aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
             aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-            region_name=os.environ.get('AWS_REGION', 'ap-northeast-2')
+            region_name=os.environ.get('AWS_REGION', 'ap-northeast-2'),
+            config=config
         )
         self.bucket_name = os.environ.get('S3_BUCKET_NAME')
+        
+        print(f"🔧 S3 매니저 초기화 완료: {self.bucket_name}")
         
     def upload_file(self, file, filename):
         """파일을 S3에 업로드"""
@@ -30,6 +42,12 @@ class S3Manager:
             # 파일 내용을 메모리에 복사 (스트림 닫힘 방지)
             file.seek(0)
             file_content = file.read()
+            
+            # 파일 크기 확인
+            if len(file_content) == 0:
+                raise Exception("파일이 비어있습니다.")
+            
+            print(f"📄 파일 읽기 완료: {len(file_content)} bytes")
             
             # 고유한 파일명 생성
             unique_filename = self.generate_unique_filename(filename)
@@ -45,7 +63,7 @@ class S3Manager:
             from io import BytesIO
             file_stream = BytesIO(file_content)
             
-            # 업로드 설정 최적화
+            # 파일 업로드 (클라이언트 초기화 시 이미 Config 설정됨)
             self.s3_client.upload_fileobj(
                 file_stream,
                 self.bucket_name,
@@ -54,11 +72,6 @@ class S3Manager:
                     'ContentType': self.get_content_type(filename),
                     'ACL': 'public-read',  # 공개 읽기 권한
                     'CacheControl': 'max-age=31536000'  # 캐시 최적화
-                },
-                Config={
-                    'connect_timeout': 30,
-                    'read_timeout': 60,
-                    'retries': {'max_attempts': 3}
                 }
             )
             
