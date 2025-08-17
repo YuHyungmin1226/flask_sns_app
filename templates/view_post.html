@@ -77,8 +77,8 @@
                                                     <i class="bi bi-download"></i> 다운로드
                                                 </a>
                                                 {% if current_user.id == post.author_id %}
-                                                <form method="POST" action="{{ url_for('delete_post_file', post_id=post.id, filename=file.saved_name) }}" style="display: inline;" onsubmit="return confirm('정말 이 파일을 삭제하시겠습니까?')">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <form method="POST" action="{{ url_for('delete_post_file', post_id=post.id, filename=file.saved_name) }}" class="inline-form" onsubmit="return confirm('정말 이 파일을 삭제하시겠습니까?')">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="파일 삭제">
                                                         <i class="bi bi-trash"></i> 삭제
                                                     </button>
                                                 </form>
@@ -91,17 +91,18 @@
                                     {% if file.file_type == 'image' %}
                                     <div class="mt-2">
                                         <img src="{{ url_for('download_file', filename=file.saved_name) }}" 
-                                             class="img-fluid rounded" 
+                                             class="img-fluid rounded cursor-pointer" 
                                              alt="{{ file.original_name }}"
-                                             style="cursor: pointer;"
-                                             onclick="openImageModal('{{ url_for('download_file', filename=file.saved_name) }}', '{{ file.original_name }}')">
+                                             data-image-url="{{ url_for('download_file', filename=file.saved_name) }}"
+                                             data-image-name="{{ file.original_name }}"
+                                             title="이미지 클릭하여 확대보기">
                                     </div>
                                     {% endif %}
                                     
                                     <!-- 비디오 재생 -->
                                     {% if file.file_type == 'video' %}
                                     <div class="mt-2">
-                                        <video controls class="w-100 rounded" style="width: 100%; max-height: 400px; object-fit: contain;">
+                                        <video controls class="w-100 rounded video-responsive">
                                             <source src="{{ url_for('download_file', filename=file.saved_name) }}" type="{{ file.mime_type }}">
                                         </video>
                                     </div>
@@ -128,10 +129,11 @@
                         {% for preview in url_previews %}
                             {% if preview.type == 'youtube' %}
                                 <div class="youtube-preview mb-3">
-                                    <div style="position: relative;">
+                                    <div class="youtube-preview-container">
                                         <img src="{{ preview.thumbnail_url }}" alt="{{ preview.title }}">
-                                        <button class="play-button" onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')">
+                                        <button class="play-button" onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')" title="유튜브 비디오 재생">
                                             <i class="bi bi-play-fill"></i>
+                                            <span class="sr-only">유튜브 비디오 재생</span>
                                         </button>
                                         <div class="youtube-info">
                                             <h6>{{ preview.title }}</h6>
@@ -152,7 +154,7 @@
                                 <div class="url-preview mb-3">
                                     {% if preview.image_url %}
                                     <div class="mb-3">
-                                        <img src="{{ preview.image_url }}" class="img-fluid rounded" alt="{{ preview.title }}" style="max-width: 300px; max-height: 200px; object-fit: cover;">
+                                        <img src="{{ preview.image_url }}" class="img-fluid rounded url-preview-image" alt="{{ preview.title }}">
                                     </div>
                                     {% endif %}
                                     <div>
@@ -414,6 +416,15 @@ document.addEventListener('DOMContentLoaded', function() {
         audio.addEventListener('loadedmetadata', function() {
             // 오디오 로드 완료 시 컨트롤 표시
             audio.controls = true;
+        });
+    });
+    
+    // 이미지 클릭 이벤트 처리
+    document.querySelectorAll('img[data-image-url]').forEach(function(img) {
+        img.addEventListener('click', function() {
+            const imageUrl = this.getAttribute('data-image-url');
+            const imageName = this.getAttribute('data-image-name');
+            openImageModal(imageUrl, imageName);
         });
     });
 });
