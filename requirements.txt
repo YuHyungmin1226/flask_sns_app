@@ -7,10 +7,9 @@ Werkzeug==2.3.7
 requests==2.31.0
 beautifulsoup4==4.12.2
 python-dotenv==1.0.0
-Pillow==11.3.0
+Pillow==10.0.1
 filetype==1.2.0
-python-magic-bin==0.4.14
-waitress==3.0.2
+gunicorn==21.2.0
 Jinja2==3.1.6
 SQLAlchemy==2.0.41
 greenlet==3.2.3
@@ -23,5 +22,4 @@ idna==3.10
 urllib3==2.5.0
 certifi==2025.7.14
 soupsieve==2.7
-psycopg2-binary==2.9.9
-gunicorn==21.2.0 
+psycopg2-binary==2.9.9 
