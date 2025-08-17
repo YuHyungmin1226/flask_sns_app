@@ -247,7 +247,7 @@
                 <i class="bi bi-house-heart"></i> 개인 SNS
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" title="네비게이션 메뉴 토글">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
@@ -269,14 +269,16 @@
                             <i class="bi bi-person"></i> 프로필
                         </a>
                     </li>
-                    {% if current_user.username == 'admin' %}
+                </ul>
+                {% if current_user.username == 'admin' %}
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin') }}">
                             <i class="bi bi-gear"></i> 관리자
                         </a>
                     </li>
-                    {% endif %}
                 </ul>
+                {% endif %}
                 {% endif %}
                 
                 {% if current_user.is_authenticated %}
