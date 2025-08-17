@@ -39,6 +39,13 @@ login_manager.login_view = 'login'
 # URL 미리보기 생성기
 url_preview_generator = URLPreviewGenerator()
 
+# 한국 시간대 설정
+KST = timezone(timedelta(hours=9))
+
+def get_korean_time():
+    """한국 시간 반환"""
+    return datetime.now(KST)
+
 # Jinja2 필터 추가
 @app.template_filter('from_json')
 def from_json_filter(value):
@@ -65,13 +72,6 @@ def korean_time_filter(dt):
         korean_dt = dt.astimezone(KST)
     
     return korean_dt.strftime('%Y-%m-%d %H:%M')
-
-# 한국 시간대 설정
-KST = timezone(timedelta(hours=9))
-
-def get_korean_time():
-    """한국 시간 반환"""
-    return datetime.now(KST)
 
 # 데이터베이스 모델
 class User(UserMixin, db.Model):
@@ -135,6 +135,35 @@ def ping():
         'timestamp': datetime.now(KST).isoformat(),
         'message': 'Flask SNS is running!'
     })
+
+# 데이터베이스 초기화 및 기본 관리자 계정 생성
+def init_db():
+    """데이터베이스 초기화 및 기본 관리자 계정 생성"""
+    try:
+        with app.app_context():
+            # 데이터베이스 테이블 생성
+            db.create_all()
+            
+            # 기본 관리자 계정 생성
+            admin_user = User.query.filter_by(username='admin').first()
+            if not admin_user:
+                admin_user = User(
+                    username='admin',
+                    password_hash=generate_password_hash('admin123'),
+                    password_changed=False
+                )
+                db.session.add(admin_user)
+                db.session.commit()
+                print("✅ 기본 관리자 계정이 생성되었습니다. (admin/admin123)")
+            else:
+                print("ℹ️ 관리자 계정이 이미 존재합니다.")
+    except Exception as e:
+        print(f"❌ 데이터베이스 초기화 오류: {e}")
+        import traceback
+        traceback.print_exc()
+
+# 애플리케이션 시작 시 데이터베이스 초기화
+init_db()
 
 # 라우트
 @app.route('/')
@@ -439,4 +468,6 @@ def api_posts():
 if __name__ == '__main__':
     # Railway 배포용 포트 설정
     port = int(os.environ.get('PORT', 5000))
+    print(f"🚀 Flask SNS 앱을 포트 {port}에서 시작합니다...")
+    print(f"📊 데이터베이스: {app.config['SQLALCHEMY_DATABASE_URI']}")
     app.run(debug=False, host='0.0.0.0', port=port) 
