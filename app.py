@@ -150,8 +150,8 @@ def init_db():
             if not admin_user:
                 admin_user = User(
                     username='admin',
-                    password_hash=generate_password_hash('admin123'),
-                    password_changed=False
+                            password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123')),
+        password_changed=False
                 )
                 db.session.add(admin_user)
                 db.session.commit()
@@ -197,7 +197,7 @@ def login():
             login_user(user)
             
             # 기본 비밀번호 사용 중인지 확인
-            if not user.password_changed and password == 'admin123':
+            if not user.password_changed and password == os.environ.get('ADMIN_PASSWORD', 'admin123'):
                 flash('보안을 위해 비밀번호를 변경해주세요.', 'warning')
                 return redirect(url_for('change_password'))
             else:
