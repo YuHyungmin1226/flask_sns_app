@@ -448,10 +448,29 @@ def delete_user(user_id):
 def download_file(filename):
     """파일 다운로드/표시 (S3 연동)"""
     try:
-        # 파일 정보를 데이터베이스에서 찾기 (실제 구현에서는 더 정교한 방법 필요)
-        flash('파일 다운로드 기능은 S3 URL로 직접 접근하세요.', 'info')
-        return redirect(url_for('index'))
+        # 모든 게시글에서 해당 파일명을 가진 파일 찾기
+        posts = Post.query.all()
+        file_info = None
+        
+        for post in posts:
+            if post.files:
+                files = get_file_info_from_json(post.files)
+                for file in files:
+                    if file['saved_name'] == filename:
+                        file_info = file
+                        break
+                if file_info:
+                    break
+        
+        if file_info and 'file_url' in file_info:
+            # S3 URL로 리다이렉트
+            return redirect(file_info['file_url'])
+        else:
+            flash('파일을 찾을 수 없습니다.', 'error')
+            return redirect(url_for('index'))
+            
     except Exception as e:
+        print(f"파일 다운로드 오류: {e}")
         flash('파일을 찾을 수 없습니다.', 'error')
         return redirect(url_for('index'))
 
