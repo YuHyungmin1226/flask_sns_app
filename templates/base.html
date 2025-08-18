@@ -269,6 +269,11 @@
                             <i class="bi bi-person"></i> 프로필
                         </a>
                     </li>
+                </ul>
+                {% endif %}
+                
+                {% if current_user.is_authenticated %}
+                <ul class="navbar-nav">
                     {% if current_user.username == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin') }}">
@@ -276,11 +281,6 @@
                         </a>
                     </li>
                     {% endif %}
-                </ul>
-                {% endif %}
-                
-                {% if current_user.is_authenticated %}
-                <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> {{ current_user.username }}
