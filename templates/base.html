@@ -234,10 +234,17 @@
             background-color: rgba(0,0,0,0.1);
         }
         
-        audio::-webkit-media-controls {
-            background-color: rgba(0,0,0,0.1);
-        }
-    </style>
+                 audio::-webkit-media-controls {
+             background-color: rgba(0,0,0,0.1);
+         }
+         
+         /* 로그아웃 버튼 구분선 스타일 */
+         .dropdown-item-logout {
+             border-top: 1px solid #dee2e6 !important;
+             margin-top: 0.5rem !important;
+             padding-top: 0.5rem !important;
+         }
+     </style>
 </head>
 <body data-bs-theme="light">
     <!-- 네비게이션 바 -->
@@ -270,14 +277,12 @@
                         </a>
                     </li>
                 </ul>
-                <ul class="navbar-nav">
-                    {% if current_user.username == 'admin' %}
+                <ul class="navbar-nav">{% if current_user.username == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin') }}">
                             <i class="bi bi-gear"></i> 관리자
                         </a>
-                    </li>
-                    {% endif %}
+                    </li>{% endif %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> {{ current_user.username }}
@@ -289,8 +294,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('change_password') }}">
                                 <i class="bi bi-shield-lock"></i> 비밀번호 변경
                             </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                            <li><a class="dropdown-item text-muted dropdown-item-logout" href="{{ url_for('logout') }}">
                                 <i class="bi bi-box-arrow-right"></i> 로그아웃
                             </a></li>
                         </ul>
@@ -337,12 +341,14 @@
     <div class="flash-messages">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                                                 <button type="button" class="btn-close" data-bs-dismiss="alert" title="알림 닫기"></button>
-                    </div>
-                {% endfor %}
+                <ul class="list-unstyled mb-0">{% for category, message in messages %}
+                    <li>
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" title="알림 닫기"></button>
+                        </div>
+                    </li>{% endfor %}
+                </ul>
             {% endif %}
         {% endwith %}
     </div>

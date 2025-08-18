@@ -37,3 +37,9 @@
     white-space: nowrap;
     border: 0;
 }
+
+.dropdown-item-logout {
+    border-top: 1px solid #dee2e6;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+}
