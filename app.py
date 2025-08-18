@@ -44,7 +44,7 @@ url_preview_generator = URLPreviewGenerator()
 KST = timezone(timedelta(hours=9))
 
 def get_korean_time():
-    """한국 시간 반환"""
+    """한국 시간(KST) 반환 - 모든 시간 관련 작업에서 일관성 있게 사용"""
     return datetime.now(KST)
 
 # Jinja2 필터 추가
@@ -66,6 +66,7 @@ def korean_time_filter(dt):
     
     # timezone 정보가 없으면 한국 시간으로 가정 (기존 데이터 호환성)
     if dt.tzinfo is None:
+        # 데이터베이스에 저장된 시간은 이미 한국 시간이므로 그대로 사용
         korean_dt = dt.replace(tzinfo=KST)
     else:
         # 이미 timezone 정보가 있으면 한국 시간으로 변환
@@ -132,7 +133,7 @@ def ping():
     """Railway 슬립모드 방지용 핑 엔드포인트"""
     return jsonify({
         'status': 'alive',
-        'timestamp': datetime.now(KST).isoformat(),
+        'timestamp': get_korean_time().isoformat(),
         'message': 'Flask SNS is running!'
     })
 
