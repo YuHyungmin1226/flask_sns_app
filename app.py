@@ -47,6 +47,10 @@ def get_korean_time():
     """한국 시간(KST) 반환 - 모든 시간 관련 작업에서 일관성 있게 사용"""
     return datetime.now(KST)
 
+def get_korean_time_for_db():
+    """데이터베이스 저장용 한국 시간 반환 (timezone 정보 제거)"""
+    return datetime.now(KST).replace(tzinfo=None)
+
 # Jinja2 필터 추가
 @app.template_filter('from_json')
 def from_json_filter(value):
@@ -79,7 +83,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
-    created_at = db.Column(db.DateTime, default=get_korean_time)
+    created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
     last_login = db.Column(db.DateTime)
     login_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime)
@@ -92,8 +96,8 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=get_korean_time)
-    updated_at = db.Column(db.DateTime, default=get_korean_time, onupdate=get_korean_time)
+    created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
+    updated_at = db.Column(db.DateTime, default=get_korean_time_for_db, onupdate=get_korean_time_for_db)
     is_public = db.Column(db.Boolean, default=True)
     url_previews = db.Column(db.Text, default='[]')  # JSON 문자열로 저장
     files = db.Column(db.Text, default='[]')  # JSON 문자열로 저장
@@ -105,7 +109,7 @@ class Comment(db.Model):
     content = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=get_korean_time)
+    created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -113,12 +117,12 @@ def load_user(user_id):
 
 # 보안 관련 함수들
 def is_account_locked(user):
-    if user.locked_until and user.locked_until > get_korean_time():
+    if user.locked_until and user.locked_until > get_korean_time_for_db():
         return True
     return False
 
 def lock_account(user, minutes=15):
-    user.locked_until = get_korean_time() + timedelta(minutes=minutes)
+    user.locked_until = get_korean_time_for_db() + timedelta(minutes=minutes)
     user.login_attempts = 0
     db.session.commit()
 
@@ -192,7 +196,7 @@ def login():
         
         if check_password_hash(user.password_hash, password):
             reset_login_attempts(user)
-            user.last_login = get_korean_time()
+            user.last_login = get_korean_time_for_db()
             db.session.commit()
             login_user(user)
             
