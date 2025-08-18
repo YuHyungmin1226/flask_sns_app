@@ -67,12 +67,12 @@ def korean_time_filter(dt):
     # timezone 정보가 없으면 한국 시간으로 가정 (기존 데이터 호환성)
     if dt.tzinfo is None:
         # 데이터베이스에 저장된 시간은 이미 한국 시간이므로 그대로 사용
-        korean_dt = dt.replace(tzinfo=KST)
+        # replace() 대신 직접 포맷팅하여 timezone 변환 없이 처리
+        return dt.strftime('%Y-%m-%d %H:%M')
     else:
         # 이미 timezone 정보가 있으면 한국 시간으로 변환
         korean_dt = dt.astimezone(KST)
-    
-    return korean_dt.strftime('%Y-%m-%d %H:%M')
+        return korean_dt.strftime('%Y-%m-%d %H:%M')
 
 # 데이터베이스 모델
 class User(UserMixin, db.Model):
