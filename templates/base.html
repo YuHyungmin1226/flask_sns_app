@@ -269,16 +269,14 @@
                             <i class="bi bi-person"></i> 프로필
                         </a>
                     </li>
-                </ul>
-                {% if current_user.username == 'admin' %}
-                <ul class="navbar-nav me-auto">
+                    {% if current_user.username == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin') }}">
                             <i class="bi bi-gear"></i> 관리자
                         </a>
                     </li>
+                    {% endif %}
                 </ul>
-                {% endif %}
                 {% endif %}
                 
                 {% if current_user.is_authenticated %}
