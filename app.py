@@ -64,12 +64,11 @@ def korean_time_filter(dt):
     if dt is None:
         return ""
     
-    # UTC 시간을 한국 시간으로 변환 (이미 한국 시간이면 그대로 사용)
+    # timezone 정보가 없으면 한국 시간으로 가정 (기존 데이터 호환성)
     if dt.tzinfo is None:
-        # timezone 정보가 없으면 한국 시간으로 가정
         korean_dt = dt.replace(tzinfo=KST)
     else:
-        # UTC 시간을 한국 시간으로 변환
+        # 이미 timezone 정보가 있으면 한국 시간으로 변환
         korean_dt = dt.astimezone(KST)
     
     return korean_dt.strftime('%Y-%m-%d %H:%M')
@@ -113,7 +112,7 @@ def load_user(user_id):
 
 # 보안 관련 함수들
 def is_account_locked(user):
-    if user.locked_until and user.locked_until > datetime.utcnow():
+    if user.locked_until and user.locked_until > get_korean_time():
         return True
     return False
 
