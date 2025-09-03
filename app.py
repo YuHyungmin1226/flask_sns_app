@@ -145,23 +145,27 @@ def ping():
 def init_db():
     """데이터베이스 초기화 및 기본 관리자 계정 생성"""
     try:
+        print("ℹ️ [DEBUG] Attempting to initialize database...")
         with app.app_context():
-            # 데이터베이스 테이블 생성
+            print("ℹ️ [DEBUG] Entered app_context. Calling db.create_all()...")
             db.create_all()
+            print("✅ [DEBUG] db.create_all() succeeded.")
             
             # 기본 관리자 계정 생성
             admin_user = User.query.filter_by(username='admin').first()
             if not admin_user:
+                print("ℹ️ [DEBUG] Admin user not found, creating one...")
                 admin_user = User(
                     username='admin',
-                            password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123')),
-        password_changed=False
+                    password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123')),
+                    password_changed=False
                 )
                 db.session.add(admin_user)
                 db.session.commit()
                 print("✅ 기본 관리자 계정이 생성되었습니다. (admin/admin123)")
             else:
                 print("ℹ️ 관리자 계정이 이미 존재합니다.")
+        print("✅ [DEBUG] Database initialization finished successfully.")
     except Exception as e:
         print(f"❌ 데이터베이스 초기화 오류: {e}")
         import traceback
