@@ -20,6 +20,15 @@ if DATABASE_URL:
     # Railway PostgreSQL 사용
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+    # [DEBUG] Append sslmode=disable to test SSL issues
+    print("ℹ️ [DEBUG] Forcing SSL off for database connection to debug...")
+    if '?' in DATABASE_URL:
+        DATABASE_URL += '&sslmode=disable'
+    else:
+        DATABASE_URL += '?sslmode=disable'
+    print(f"ℹ️ [DEBUG] Modified DATABASE_URL: {DATABASE_URL}")
+
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
     # 로컬 개발용 SQLite
@@ -31,41 +40,6 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# ==============================================================================
-#  [DEBUG] Low-level network connectivity test
-# ==============================================================================
-import socket
-from urllib.parse import urlparse
-
-db_url_to_test = app.config.get('SQLALCHEMY_DATABASE_URI')
-if db_url_to_test and db_url_to_test.startswith('postgresql'):
-    print("ℹ️ [DEBUG] Performing low-level network test...")
-    try:
-        parsed_url = urlparse(db_url_to_test)
-        db_host = parsed_url.hostname
-        db_port = parsed_url.port
-        if db_host and db_port:
-            print(f"ℹ️ [DEBUG] Attempting to create socket connection to host '{db_host}' on port {db_port}...")
-            sock = socket.create_connection((db_host, db_port), timeout=10)
-            sock.close()
-            print("✅ [DEBUG] TCP socket connection to database host was SUCCESSFUL.")
-        else:
-            print("⚠️ [DEBUG] Could not parse host or port from DATABASE_URL.")
-    except Exception as e:
-        print("===================================================")
-        print("❌ [FATAL] FAILED to establish a low-level TCP socket connection to the database host.")
-        print(f"   - Host: {db_host}")
-        print(f"   - Port: {db_port}")
-        print(f"   - Error: {e}")
-        print("   - This strongly suggests a network issue between the app and the database on Railway.")
-        print("===================================================")
-        # Exit explicitly to make sure this message is seen
-        import sys
-        sys.exit(1)
-else:
-    print("ℹ️ [DEBUG] Skipping network test for non-PostgreSQL database.")
-# ==============================================================================
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
