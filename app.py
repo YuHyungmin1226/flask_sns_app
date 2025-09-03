@@ -32,6 +32,41 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# ==============================================================================
+#  [DEBUG] Low-level network connectivity test
+# ==============================================================================
+import socket
+from urllib.parse import urlparse
+
+db_url_to_test = app.config.get('SQLALCHEMY_DATABASE_URI')
+if db_url_to_test and db_url_to_test.startswith('postgresql'):
+    print("ℹ️ [DEBUG] Performing low-level network test...")
+    try:
+        parsed_url = urlparse(db_url_to_test)
+        db_host = parsed_url.hostname
+        db_port = parsed_url.port
+        if db_host and db_port:
+            print(f"ℹ️ [DEBUG] Attempting to create socket connection to host '{db_host}' on port {db_port}...")
+            sock = socket.create_connection((db_host, db_port), timeout=10)
+            sock.close()
+            print("✅ [DEBUG] TCP socket connection to database host was SUCCESSFUL.")
+        else:
+            print("⚠️ [DEBUG] Could not parse host or port from DATABASE_URL.")
+    except Exception as e:
+        print("===================================================")
+        print("❌ [FATAL] FAILED to establish a low-level TCP socket connection to the database host.")
+        print(f"   - Host: {db_host}")
+        print(f"   - Port: {db_port}")
+        print(f"   - Error: {e}")
+        print("   - This strongly suggests a network issue between the app and the database on Railway.")
+        print("===================================================")
+        # Exit explicitly to make sure this message is seen
+        import sys
+        sys.exit(1)
+else:
+    print("ℹ️ [DEBUG] Skipping network test for non-PostgreSQL database.")
+# ==============================================================================
+
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -145,27 +180,23 @@ def ping():
 def init_db():
     """데이터베이스 초기화 및 기본 관리자 계정 생성"""
     try:
-        print("ℹ️ [DEBUG] Attempting to initialize database...")
         with app.app_context():
-            print("ℹ️ [DEBUG] Entered app_context. Calling db.create_all()...")
+            # 데이터베이스 테이블 생성
             db.create_all()
-            print("✅ [DEBUG] db.create_all() succeeded.")
             
             # 기본 관리자 계정 생성
             admin_user = User.query.filter_by(username='admin').first()
             if not admin_user:
-                print("ℹ️ [DEBUG] Admin user not found, creating one...")
                 admin_user = User(
                     username='admin',
-                    password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123')),
-                    password_changed=False
+                            password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123')),
+        password_changed=False
                 )
                 db.session.add(admin_user)
                 db.session.commit()
                 print("✅ 기본 관리자 계정이 생성되었습니다. (admin/admin123)")
             else:
                 print("ℹ️ 관리자 계정이 이미 존재합니다.")
-        print("✅ [DEBUG] Database initialization finished successfully.")
     except Exception as e:
         print(f"❌ 데이터베이스 초기화 오류: {e}")
         import traceback
