@@ -20,15 +20,6 @@ if DATABASE_URL:
     # Railway PostgreSQL 사용
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-
-    # [DEBUG] Append sslmode=disable to test SSL issues
-    print("ℹ️ [DEBUG] Forcing SSL off for database connection to debug...")
-    if '?' in DATABASE_URL:
-        DATABASE_URL += '&sslmode=disable'
-    else:
-        DATABASE_URL += '?sslmode=disable'
-    print(f"ℹ️ [DEBUG] Modified DATABASE_URL: {DATABASE_URL}")
-
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
     # 로컬 개발용 SQLite
