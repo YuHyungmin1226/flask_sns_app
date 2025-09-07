@@ -1,6 +1,7 @@
 botocore
 boto3
 gunicorn
+psycopg2-binary==2.9.9
 Flask==2.3.3
 Flask-SQLAlchemy==3.0.5
 Flask==2.3.3
