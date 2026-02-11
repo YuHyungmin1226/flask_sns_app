@@ -174,15 +174,15 @@ def init_db():
             # SQLite에서는 기존 데이터에 컬럼 추가 시 default 값이 적용되지 않을 수 있음 -> 수동 처리 필요)
             # 여기서는 간단히 모든 기존 유저를 승인 처리 (서비스 중단 방지)
             try:
-                # SQLite 컬럼 추가 확인을 위한 더미 쿼리
-                db.session.execute(db.text('SELECT is_approved FROM user LIMIT 1'))
+                # SQLite 컬럼 추가 확인을 위한 더미 쿼리 (Postgres 예약어 'user' 충돌 방지를 위해 따옴표 사용)
+                db.session.execute(db.text('SELECT is_approved FROM "user" LIMIT 1'))
             except Exception:
                 # 컬럼이 없으면 추가 (SQLite는 ALTER TABLE ADD COLUMN 지원)
                 print("⚠️ User 테이블에 is_approved 컬럼이 없습니다. 추가합니다.")
                 try:
                     with db.engine.connect() as conn:
-                        # PostgreSQL/SQLite 호환성을 위해 TRUE 사용
-                        conn.execute(db.text('ALTER TABLE user ADD COLUMN is_approved BOOLEAN DEFAULT TRUE'))
+                        # PostgreSQL/SQLite 호환성을 위해 TRUE 사용 및 테이블명 쿼팅
+                        conn.execute(db.text('ALTER TABLE "user" ADD COLUMN is_approved BOOLEAN DEFAULT TRUE'))
                         conn.commit()
                     print("✅ is_approved 컬럼이 추가되었습니다.")
                 except Exception as e:
