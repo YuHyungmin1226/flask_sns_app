@@ -149,6 +149,25 @@ def init_db():
         with app.app_context():
             # 데이터베이스 테이블 생성
             db.create_all()
+
+            # DB 마이그레이션: existing users should be approved? 
+            # 아니면 기존 유저는 승인된 것으로 간주 (is_approved 컬럼 추가 시 default=False이지만, 
+            # SQLite에서는 기존 데이터에 컬럼 추가 시 default 값이 적용되지 않을 수 있음 -> 수동 처리 필요)
+            # 여기서는 간단히 모든 기존 유저를 승인 처리 (서비스 중단 방지)
+            try:
+                # SQLite 컬럼 추가 확인을 위한 더미 쿼리 (Postgres 예약어 'user' 충돌 방지를 위해 따옴표 사용)
+                db.session.execute(db.text('SELECT is_approved FROM "user" LIMIT 1'))
+            except Exception:
+                # 컬럼이 없으면 추가 (SQLite는 ALTER TABLE ADD COLUMN 지원)
+                print("⚠️ User 테이블에 is_approved 컬럼이 없습니다. 추가합니다.")
+                try:
+                    with db.engine.connect() as conn:
+                        # PostgreSQL/SQLite 호환성을 위해 TRUE 사용 및 테이블명 쿼팅
+                        conn.execute(db.text('ALTER TABLE "user" ADD COLUMN is_approved BOOLEAN DEFAULT TRUE'))
+                        conn.commit()
+                    print("✅ is_approved 컬럼이 추가되었습니다.")
+                except Exception as e:
+                    print(f"❌ 컬럼 추가 실패: {e}")
             
             # 기본 관리자 계정 생성
             admin_user = User.query.filter_by(username='admin').first()
@@ -169,24 +188,7 @@ def init_db():
                     print("✅ 관리자 계정이 승인되었습니다.")
                 print("ℹ️ 관리자 계정이 이미 존재합니다.")
             
-            # DB 마이그레이션: existing users should be approved? 
-            # 아니면 기존 유저는 승인된 것으로 간주 (is_approved 컬럼 추가 시 default=False이지만, 
-            # SQLite에서는 기존 데이터에 컬럼 추가 시 default 값이 적용되지 않을 수 있음 -> 수동 처리 필요)
-            # 여기서는 간단히 모든 기존 유저를 승인 처리 (서비스 중단 방지)
-            try:
-                # SQLite 컬럼 추가 확인을 위한 더미 쿼리 (Postgres 예약어 'user' 충돌 방지를 위해 따옴표 사용)
-                db.session.execute(db.text('SELECT is_approved FROM "user" LIMIT 1'))
-            except Exception:
-                # 컬럼이 없으면 추가 (SQLite는 ALTER TABLE ADD COLUMN 지원)
-                print("⚠️ User 테이블에 is_approved 컬럼이 없습니다. 추가합니다.")
-                try:
-                    with db.engine.connect() as conn:
-                        # PostgreSQL/SQLite 호환성을 위해 TRUE 사용 및 테이블명 쿼팅
-                        conn.execute(db.text('ALTER TABLE "user" ADD COLUMN is_approved BOOLEAN DEFAULT TRUE'))
-                        conn.commit()
-                    print("✅ is_approved 컬럼이 추가되었습니다.")
-                except Exception as e:
-                    print(f"❌ 컬럼 추가 실패: {e}")
+
 
     except Exception as e:
         print(f"❌ 데이터베이스 초기화 오류: {e}")
