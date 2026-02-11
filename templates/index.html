@@ -14,208 +14,113 @@
 
         <!-- 게시글 목록 -->
         {% if posts %}
-            {% for post in posts %}
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-0">
-                            <i class="bi bi-person-circle"></i> {{ post.author.username }}
-                        </h6>
-                        <small class="text-muted">
-                            <i class="bi bi-clock"></i> {{ post.created_at|korean_time }}
-                        </small>
-                    </div>
-                    <div>
-                        {% if not post.is_public %}
-                            <span class="badge bg-warning">
-                                <i class="bi bi-lock"></i> 비공개
-                            </span>
-                        {% endif %}
-                        {% if current_user.id == post.author_id %}
-                            <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" 
-                                  class="inline-form" 
-                                  onsubmit="return confirm('정말 삭제하시겠습니까?')">
-                                <button type="submit" class="btn btn-outline-danger btn-sm" title="게시글 삭제">
-                                    <i class="bi bi-trash"></i>
-                                    <span class="sr-only">게시글 삭제</span>
-                                </button>
-                            </form>
-                        {% endif %}
-                    </div>
+        {% for post in posts %}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0">
+                        <i class="bi bi-person-circle"></i> {{ post.author.username }}
+                    </h6>
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> {{ post.created_at|korean_time }}
+                    </small>
                 </div>
-                <div class="card-body">
-                    <div class="post-content">{{ post.content }}</div>
-                    
-                    <!-- 파일 첨부 -->
-                    {% if post.files %}
-                        {% set files = post.files|from_json %}
-                        {% if files %}
-                            <div class="attached-files mt-3">
-                                <h6><i class="bi bi-paperclip"></i> 첨부파일 ({{ files|length }}개)</h6>
-                                <div class="row">
-                                    {% for file in files %}
-                                    <div class="col-12 mb-2">
-                                        <div class="file-item border rounded p-2">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="bi {{ 'bi-image' if file.file_type == 'image' else 'bi-file-text' if file.file_type == 'document' else 'bi-camera-video' if file.file_type == 'video' else 'bi-music-note' if file.file_type == 'audio' else 'bi-archive' if file.file_type == 'archive' else 'bi-file-earmark' }} me-2"></i>
-                                                <div class="flex-grow-1">
-                                                    <div class="fw-bold small">
-                                                        {% if file.file_type == 'image' %}
-                                                            이미지 파일
-                                                        {% elif file.file_type == 'video' %}
-                                                            비디오 파일
-                                                        {% elif file.file_type == 'audio' %}
-                                                            오디오 파일
-                                                        {% elif file.file_type == 'document' %}
-                                                            문서 파일
-                                                        {% elif file.file_type == 'archive' %}
-                                                            압축 파일
-                                                        {% else %}
-                                                            첨부 파일
-                                                        {% endif %}
-                                                    </div>
-                                                    <small class="text-muted">
-                                                        {% if file.size < 1024 %}
-                                                            {{ file.size }} B
-                                                        {% elif file.size < 1024 * 1024 %}
-                                                            {{ (file.size / 1024)|round(1) }} KB
-                                                        {% else %}
-                                                            {{ (file.size / 1024 / 1024)|round(1) }} MB
-                                                        {% endif %}
-                                                    </small>
-                                                </div>
-                                                <a href="{{ url_for('download_file', filename=file.saved_name) }}" class="btn btn-sm btn-outline-primary" title="파일 다운로드">
-                                                    <i class="bi bi-download"></i>
-                                                    <span class="sr-only">파일 다운로드</span>
-                                                </a>
-                                            </div>
-                                            
-                                                                                           <!-- 이미지 미리보기 (작은 크기) -->
-                                               {% if file.file_type == 'image' %}
-                                               <div class="mt-2">
-                                                                                                   <img src="{{ url_for('download_file', filename=file.saved_name) }}" 
-                                                     class="img-fluid rounded cursor-pointer" 
-                                                     alt="{{ file.original_name }}"
-                                                     data-image-url="{{ url_for('download_file', filename=file.saved_name) }}"
-                                                     data-image-name="{{ file.original_name }}"
-                                                     title="이미지 클릭하여 확대보기">
-                                               </div>
-                                               {% endif %}
-                                            
-                                                                                      <!-- 비디오 재생 (작은 크기) -->
-                                          {% if file.file_type == 'video' %}
-                                          <div class="mt-2">
-                                              <video controls class="w-100 rounded video-responsive">
-                                                  <source src="{{ url_for('download_file', filename=file.saved_name) }}" type="{{ file.mime_type }}">
-                                              </video>
-                                          </div>
-                                          {% endif %}
-                                            
-                                            <!-- 오디오 재생 -->
-                                            {% if file.file_type == 'audio' %}
-                                            <div class="mt-2">
-                                                <audio controls class="w-100">
-                                                    <source src="{{ url_for('download_file', filename=file.saved_name) }}" type="{{ file.mime_type }}">
-                                                </audio>
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
+                <div>
+                    {% if not post.is_public %}
+                    <span class="badge bg-warning">
+                        <i class="bi bi-lock"></i> 비공개
+                    </span>
+                    {% endif %}
+                    {% if current_user.id == post.author_id %}
+                    <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" class="inline-form"
+                        onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="게시글 삭제">
+                            <i class="bi bi-trash"></i>
+                            <span class="sr-only">게시글 삭제</span>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="post-content">{{ post.content }}</div>
+
+
+
+                <!-- URL 미리보기 -->
+                {% if post.url_previews %}
+                {% set url_previews = post.url_previews|from_json %}
+                <div class="url-previews-container">
+                    {% for preview in url_previews %}
+                    {% if preview.type == 'youtube' %}
+                    <div class="youtube-preview mb-3">
+                        <div class="youtube-preview-container">
+                            <img src="{{ preview.thumbnail_url }}" alt="{{ preview.title }}">
+                            <button class="play-button"
+                                onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')"
+                                title="유튜브 비디오 재생">
+                                <i class="bi bi-play-fill"></i>
+                                <span class="sr-only">유튜브 비디오 재생</span>
+                            </button>
+                            <div class="youtube-info">
+                                <h6>{{ preview.title }}</h6>
+                                <small>{{ preview.author_name }}</small>
                             </div>
-                        {% endif %}
-                    {% endif %}
-                    
-                    <!-- URL 미리보기 -->
-                    {% if post.url_previews %}
-                        {% set url_previews = post.url_previews|from_json %}
-                        <div class="url-previews-container">
-                            {% for preview in url_previews %}
-                                {% if preview.type == 'youtube' %}
-                                    <div class="youtube-preview mb-3">
-                                        <div class="youtube-preview-container">
-                                            <img src="{{ preview.thumbnail_url }}" alt="{{ preview.title }}">
-                                            <button class="play-button" onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')" title="유튜브 비디오 재생">
-                                                <i class="bi bi-play-fill"></i>
-                                                <span class="sr-only">유튜브 비디오 재생</span>
-                                            </button>
-                                            <div class="youtube-info">
-                                                <h6>{{ preview.title }}</h6>
-                                                <small>{{ preview.author_name }}</small>
-                                            </div>
-                                            <div class="youtube-actions">
-                                                <button class="btn btn-sm" onclick="window.open('{{ preview.url }}', '_blank')" title="새 탭에서 열기">
-                                                    <i class="bi bi-box-arrow-up-right"></i>
-                                                </button>
-                                                <button class="btn btn-sm" onclick="copyYouTubeUrl('{{ preview.url }}')" title="URL 복사">
-                                                    <i class="bi bi-link-45deg"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="url-preview mb-3">
-                                        {% if preview.image_url %}
-                                        <div class="mb-3">
-                                            <img src="{{ preview.image_url }}" class="img-fluid rounded url-preview-image" alt="{{ preview.title }}">
-                                        </div>
-                                        {% endif %}
-                                        <div>
-                                            <h6><a href="{{ preview.url }}" target="_blank">{{ preview.title }}</a></h6>
-                                            {% if preview.description %}
-                                                <p class="text-muted small">{{ preview.description }}</p>
-                                            {% endif %}
-                                            <small class="text-muted">{{ preview.site_name }}</small>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
+                            <div class="youtube-actions">
+                                <button class="btn btn-sm" onclick="window.open('{{ preview.url }}', '_blank')"
+                                    title="새 탭에서 열기">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </button>
+                                <button class="btn btn-sm" onclick="copyYouTubeUrl('{{ preview.url }}')" title="URL 복사">
+                                    <i class="bi bi-link-45deg"></i>
+                                </button>
+                            </div>
                         </div>
-                    {% endif %}
-                    
-                    <!-- 댓글 수 -->
-                    <div class="mt-3">
-                        <a href="{{ url_for('view_post', post_id=post.id) }}" class="text-decoration-none">
-                            <i class="bi bi-chat"></i> 댓글 {{ post.comments|length }}개
-                        </a>
                     </div>
+                    {% else %}
+                    <div class="url-preview mb-3">
+                        {% if preview.image_url %}
+                        <div class="mb-3">
+                            <img src="{{ preview.image_url }}" class="img-fluid rounded url-preview-image"
+                                alt="{{ preview.title }}">
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h6><a href="{{ preview.url }}" target="_blank">{{ preview.title }}</a></h6>
+                            {% if preview.description %}
+                            <p class="text-muted small">{{ preview.description }}</p>
+                            {% endif %}
+                            <small class="text-muted">{{ preview.site_name }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- 댓글 수 -->
+                <div class="mt-3">
+                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="text-decoration-none">
+                        <i class="bi bi-chat"></i> 댓글 {{ post.comments|length }}개
+                    </a>
                 </div>
             </div>
-            {% endfor %}
+        </div>
+        {% endfor %}
         {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-inbox display-1 text-muted"></i>
-                <h4 class="mt-3">아직 게시글이 없습니다</h4>
-                <p class="text-muted">첫 번째 게시글을 작성해보세요!</p>
-                <a href="{{ url_for('new_post') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> 새 글 작성
-                </a>
-            </div>
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="mt-3">아직 게시글이 없습니다</h4>
+            <p class="text-muted">첫 번째 게시글을 작성해보세요!</p>
+            <a href="{{ url_for('new_post') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 새 글 작성
+            </a>
+        </div>
         {% endif %}
     </div>
 </div>
 
-<!-- 이미지 모달 -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="imageModalLabel">이미지 미리보기</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" class="img-fluid" alt="">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                <a id="downloadLink" href="" class="btn btn-primary" download>
-                    <i class="bi bi-download"></i> 다운로드
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- 유튜브 비디오 모달 -->
 <div class="modal fade" id="youtubeModal" tabindex="-1" aria-labelledby="youtubeModalLabel" aria-hidden="true">
@@ -235,58 +140,36 @@
 
 {% block scripts %}
 <script>
-// JSON 파싱을 위한 Jinja2 필터
-document.addEventListener('DOMContentLoaded', function() {
-    // URL 미리보기 클릭 이벤트
-    document.querySelectorAll('.url-preview a').forEach(function(link) {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.open(this.href, '_blank');
+    // JSON 파싱을 위한 Jinja2 필터
+    document.addEventListener('DOMContentLoaded', function () {
+        // URL 미리보기 클릭 이벤트
+        document.querySelectorAll('.url-preview a').forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                window.open(this.href, '_blank');
+            });
         });
     });
-});
 
-// 이미지 모달 열기 함수
-function openImageModal(imageSrc, imageName) {
-    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-    const modalImage = document.getElementById('modalImage');
-    const downloadLink = document.getElementById('downloadLink');
-    const modalTitle = document.getElementById('imageModalLabel');
-    
-    modalImage.src = imageSrc;
-    modalImage.alt = imageName;
-    downloadLink.href = imageSrc;
-    downloadLink.download = imageName;
-    modalTitle.textContent = imageName;
-    
-    modal.show();
-}
 
-// 이미지 클릭 이벤트 처리
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('img[data-image-url]').forEach(function(img) {
-        img.addEventListener('click', function() {
-            const imageUrl = this.getAttribute('data-image-url');
-            const imageName = this.getAttribute('data-image-name');
-            openImageModal(imageUrl, imageName);
-        });
-    });
-});
 
-// 유튜브 비디오 재생 함수
-function playYouTubeVideo(url, title) {
-    // 모달로 유튜브 비디오 표시
-    const modal = new bootstrap.Modal(document.getElementById('youtubeModal'));
-    const modalTitle = document.getElementById('youtubeModalLabel');
-    const modalBody = document.getElementById('youtubeModalBody');
-    
-    modalTitle.textContent = title;
-    
-    // 유튜브 임베드 URL 생성
-    const videoId = extractYouTubeId(url);
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    
-    modalBody.innerHTML = `
+    // 이미지 클릭 이벤트 처리
+
+
+    // 유튜브 비디오 재생 함수
+    function playYouTubeVideo(url, title) {
+        // 모달로 유튜브 비디오 표시
+        const modal = new bootstrap.Modal(document.getElementById('youtubeModal'));
+        const modalTitle = document.getElementById('youtubeModalLabel');
+        const modalBody = document.getElementById('youtubeModalBody');
+
+        modalTitle.textContent = title;
+
+        // 유튜브 임베드 URL 생성
+        const videoId = extractYouTubeId(url);
+        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+
+        modalBody.innerHTML = `
         <div class="ratio ratio-16x9">
             <iframe src="${embedUrl}" 
                     title="${title}" 
@@ -304,59 +187,59 @@ function playYouTubeVideo(url, title) {
             </button>
         </div>
     `;
-    
-    modal.show();
-}
 
-// 유튜브 URL에서 비디오 ID 추출
-function extractYouTubeId(url) {
-    const patterns = [
-        /(?:v=|\/)([0-9A-Za-z_-]{11}).*/,
-        /(?:embed\/)([0-9A-Za-z_-]{11})/,
-        /(?:v\/)([0-9A-Za-z_-]{11})/,
-        /(?:youtu\.be\/)([0-9A-Za-z_-]{11})/
-    ];
-    
-    for (let pattern of patterns) {
-        const match = url.match(pattern);
-        if (match) {
-            return match[1];
+        modal.show();
+    }
+
+    // 유튜브 URL에서 비디오 ID 추출
+    function extractYouTubeId(url) {
+        const patterns = [
+            /(?:v=|\/)([0-9A-Za-z_-]{11}).*/,
+            /(?:embed\/)([0-9A-Za-z_-]{11})/,
+            /(?:v\/)([0-9A-Za-z_-]{11})/,
+            /(?:youtu\.be\/)([0-9A-Za-z_-]{11})/
+        ];
+
+        for (let pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) {
+                return match[1];
+            }
         }
+        return null;
     }
-    return null;
-}
 
-// 유튜브 URL 복사 함수
-function copyYouTubeUrl(url) {
-    navigator.clipboard.writeText(url).then(function() {
-        // 복사 성공 알림
-        showToast('유튜브 URL이 클립보드에 복사되었습니다!', 'success');
-    }).catch(function() {
-        // 복사 실패 시 대체 방법
-        const textArea = document.createElement('textarea');
-        textArea.value = url;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        showToast('유튜브 URL이 클립보드에 복사되었습니다!', 'success');
-    });
-}
-
-// 토스트 알림 함수
-function showToast(message, type = 'info') {
-    const toastContainer = document.getElementById('toastContainer');
-    if (!toastContainer) {
-        // 토스트 컨테이너가 없으면 생성
-        const container = document.createElement('div');
-        container.id = 'toastContainer';
-        container.className = 'toast-container position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '1060';
-        document.body.appendChild(container);
+    // 유튜브 URL 복사 함수
+    function copyYouTubeUrl(url) {
+        navigator.clipboard.writeText(url).then(function () {
+            // 복사 성공 알림
+            showToast('유튜브 URL이 클립보드에 복사되었습니다!', 'success');
+        }).catch(function () {
+            // 복사 실패 시 대체 방법
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('유튜브 URL이 클립보드에 복사되었습니다!', 'success');
+        });
     }
-    
-    const toastId = 'toast-' + Date.now();
-    const toastHtml = `
+
+    // 토스트 알림 함수
+    function showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            // 토스트 컨테이너가 없으면 생성
+            const container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1060';
+            document.body.appendChild(container);
+        }
+
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
         <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert">
             <div class="d-flex">
                 <div class="toast-body">
@@ -366,35 +249,35 @@ function showToast(message, type = 'info') {
             </div>
         </div>
     `;
-    
-    document.getElementById('toastContainer').innerHTML += toastHtml;
-    const toast = new bootstrap.Toast(document.getElementById(toastId));
-    toast.show();
-    
-    // 3초 후 자동 제거
-    setTimeout(() => {
-        const toastElement = document.getElementById(toastId);
-        if (toastElement) {
-            toastElement.remove();
-        }
-    }, 3000);
-}
 
-// 비디오/오디오 컨트롤 최적화
-document.addEventListener('DOMContentLoaded', function() {
-    // 비디오 컨트롤
-    document.querySelectorAll('video').forEach(function(video) {
-        video.addEventListener('loadedmetadata', function() {
-            video.controls = true;
+        document.getElementById('toastContainer').innerHTML += toastHtml;
+        const toast = new bootstrap.Toast(document.getElementById(toastId));
+        toast.show();
+
+        // 3초 후 자동 제거
+        setTimeout(() => {
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+                toastElement.remove();
+            }
+        }, 3000);
+    }
+
+    // 비디오/오디오 컨트롤 최적화
+    document.addEventListener('DOMContentLoaded', function () {
+        // 비디오 컨트롤
+        document.querySelectorAll('video').forEach(function (video) {
+            video.addEventListener('loadedmetadata', function () {
+                video.controls = true;
+            });
+        });
+
+        // 오디오 컨트롤
+        document.querySelectorAll('audio').forEach(function (audio) {
+            audio.addEventListener('loadedmetadata', function () {
+                audio.controls = true;
+            });
         });
     });
-    
-    // 오디오 컨트롤
-    document.querySelectorAll('audio').forEach(function(audio) {
-        audio.addEventListener('loadedmetadata', function() {
-            audio.controls = true;
-        });
-    });
-});
 </script>
-{% endblock %} 
+{% endblock %}
