@@ -48,6 +48,59 @@
                     </div>
                 </div>
 
+                <!-- 승인 대기 사용자 (승인 요청이 있을 때만 표시) -->
+                {% if pending_users %}
+                <div class="card mb-4 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> 승인 대기 사용자 <span class="badge bg-danger rounded-pill">{{
+                                pending_users|length }}</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>사용자명</th>
+                                        <th>가입일</th>
+                                        <th>작업</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in pending_users %}
+                                    <tr>
+                                        <td>{{ user.id }}</td>
+                                        <td class="fw-bold">{{ user.username }}</td>
+                                        <td>{{ user.created_at|korean_time }}</td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                <form method="POST"
+                                                    action="{{ url_for('approve_user', user_id=user.id) }}"
+                                                    onsubmit="return confirm('{{ user.username }} 님을 승인하시겠습니까?')">
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="bi bi-check-circle"></i> 승인
+                                                    </button>
+                                                </form>
+                                                <form method="POST"
+                                                    action="{{ url_for('reject_user', user_id=user.id) }}"
+                                                    onsubmit="return confirm('{{ user.username }} 님의 가입 요청을 거절하시겠습니까?\n계정이 삭제됩니다.')">
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="bi bi-x-circle"></i> 거절
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- 사용자 관리 -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -75,29 +128,29 @@
                                         <td>
                                             {{ user.username }}
                                             {% if user.username == 'admin' %}
-                                                <span class="badge bg-danger">관리자</span>
+                                            <span class="badge bg-danger">관리자</span>
                                             {% endif %}
                                         </td>
                                         <td>{{ user.created_at|korean_time }}</td>
                                         <td>
                                             {% if user.last_login %}
-                                                {{ user.last_login|korean_time }}
+                                            {{ user.last_login|korean_time }}
                                             {% else %}
-                                                <span class="text-muted">로그인 기록 없음</span>
+                                            <span class="text-muted">로그인 기록 없음</span>
                                             {% endif %}
                                         </td>
                                         <td>{{ user.posts|length }}개</td>
                                         <td>
                                             {% if user.username != 'admin' %}
-                                                <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" 
-                                                      style="display: inline;" 
-                                                      onsubmit="return confirm('정말 이 사용자를 삭제하시겠습니까?\\n이 사용자의 모든 게시글과 댓글이 함께 삭제됩니다.')">
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                        <i class="bi bi-trash"></i> 삭제
-                                                    </button>
-                                                </form>
+                                            <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}"
+                                                style="display: inline;"
+                                                onsubmit="return confirm('정말 이 사용자를 삭제하시겠습니까?\\n이 사용자의 모든 게시글과 댓글이 함께 삭제됩니다.')">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="bi bi-trash"></i> 삭제
+                                                </button>
+                                            </form>
                                             {% else %}
-                                                <span class="text-muted">삭제 불가</span>
+                                            <span class="text-muted">삭제 불가</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -135,21 +188,23 @@
                                         <td>{{ post.id }}</td>
                                         <td>{{ post.author.username }}</td>
                                         <td>
-                                            <div class="text-truncate" style="max-width: 200px;" title="{{ post.content }}">
+                                            <div class="text-truncate" style="max-width: 200px;"
+                                                title="{{ post.content }}">
                                                 {{ post.content[:50] }}{% if post.content|length > 50 %}...{% endif %}
                                             </div>
                                         </td>
                                         <td>{{ post.created_at|korean_time }}</td>
                                         <td>
                                             {% if post.is_public %}
-                                                <span class="badge bg-success">공개</span>
+                                            <span class="badge bg-success">공개</span>
                                             {% else %}
-                                                <span class="badge bg-warning">비공개</span>
+                                            <span class="badge bg-warning">비공개</span>
                                             {% endif %}
                                         </td>
                                         <td>{{ post.comments|length }}개</td>
                                         <td>
-                                            <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <a href="{{ url_for('view_post', post_id=post.id) }}"
+                                                class="btn btn-outline-primary btn-sm">
                                                 <i class="bi bi-eye"></i> 보기
                                             </a>
                                         </td>
@@ -164,4 +219,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

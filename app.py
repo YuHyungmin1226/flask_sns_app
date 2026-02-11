@@ -88,6 +88,7 @@ class User(UserMixin, db.Model):
     login_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime)
     password_changed = db.Column(db.Boolean, default=False)  # 비밀번호 변경 여부
+    is_approved = db.Column(db.Boolean, default=False)  # 관리자 승인 여부
     
     posts = db.relationship('Post', backref='author', lazy=True)
     comments = db.relationship('Comment', backref='author', lazy=True)
@@ -161,7 +162,32 @@ def init_db():
                 db.session.commit()
                 print("✅ 기본 관리자 계정이 생성되었습니다. (admin/admin123)")
             else:
+                # 기존 관리자 계정 승인 처리 (마이그레이션용)
+                if not admin_user.is_approved:
+                    admin_user.is_approved = True
+                    db.session.commit()
+                    print("✅ 관리자 계정이 승인되었습니다.")
                 print("ℹ️ 관리자 계정이 이미 존재합니다.")
+            
+            # DB 마이그레이션: existing users should be approved? 
+            # 아니면 기존 유저는 승인된 것으로 간주 (is_approved 컬럼 추가 시 default=False이지만, 
+            # SQLite에서는 기존 데이터에 컬럼 추가 시 default 값이 적용되지 않을 수 있음 -> 수동 처리 필요)
+            # 여기서는 간단히 모든 기존 유저를 승인 처리 (서비스 중단 방지)
+            try:
+                # SQLite 컬럼 추가 확인을 위한 더미 쿼리
+                db.session.execute(db.text('SELECT is_approved FROM user LIMIT 1'))
+            except Exception:
+                # 컬럼이 없으면 추가 (SQLite는 ALTER TABLE ADD COLUMN 지원)
+                print("⚠️ User 테이블에 is_approved 컬럼이 없습니다. 추가합니다.")
+                try:
+                    with db.engine.connect() as conn:
+                        # PostgreSQL/SQLite 호환성을 위해 TRUE 사용
+                        conn.execute(db.text('ALTER TABLE user ADD COLUMN is_approved BOOLEAN DEFAULT TRUE'))
+                        conn.commit()
+                    print("✅ is_approved 컬럼이 추가되었습니다.")
+                except Exception as e:
+                    print(f"❌ 컬럼 추가 실패: {e}")
+
     except Exception as e:
         print(f"❌ 데이터베이스 초기화 오류: {e}")
         import traceback
@@ -193,6 +219,12 @@ def login():
         if is_account_locked(user):
             flash('계정이 잠겼습니다. 잠시 후 다시 시도해주세요.', 'error')
             return render_template('login.html')
+        
+        # 승인 대기 확인
+        if not user.is_approved:
+            flash('관리자 승인 대기 중인 계정입니다.', 'warning')
+            return render_template('login.html')
+
         
         if check_password_hash(user.password_hash, password):
             reset_login_attempts(user)
@@ -240,7 +272,8 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        flash('회원가입이 완료되었습니다!', 'success')
+        flash('회원가입 요청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.', 'success')
+        # return redirect(url_for('login')) # 기존 코드
         return redirect(url_for('login'))
     
     return render_template('register.html')
@@ -400,7 +433,44 @@ def admin():
     
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
-    return render_template('admin.html', users=users, posts=posts)
+    
+    # 승인 대기 중인 사용자 목록
+    pending_users = User.query.filter_by(is_approved=False).all()
+    
+    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users)
+
+@app.route('/admin/user/<int:user_id>/approve', methods=['POST'])
+@login_required
+def approve_user(user_id):
+    if current_user.username != 'admin':
+        flash('관리자 권한이 필요합니다.', 'error')
+        return redirect(url_for('index'))
+    
+    user = User.query.get_or_404(user_id)
+    user.is_approved = True
+    db.session.commit()
+    
+    flash(f'{user.username} 사용자가 승인되었습니다.', 'success')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/user/<int:user_id>/reject', methods=['POST'])
+@login_required
+def reject_user(user_id):
+    if current_user.username != 'admin':
+        flash('관리자 권한이 필요합니다.', 'error')
+        return redirect(url_for('index'))
+    
+    user = User.query.get_or_404(user_id)
+    if user.username == 'admin':
+        flash('관리자 계정은 거절할 수 없습니다.', 'error')
+        return redirect(url_for('admin'))
+    
+    # 거절 시 계정 삭제 (또는 별도 상태로 변경 가능하나 여기서는 삭제로 처리)
+    db.session.delete(user)
+    db.session.commit()
+    
+    flash(f'{user.username} 가입 요청이 거절(삭제)되었습니다.', 'warning')
+    return redirect(url_for('admin'))
 
 @app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
 @login_required
