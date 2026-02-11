@@ -8,7 +8,7 @@ import sys
 import uuid
 import json
 from utils.url_utils import URLPreviewGenerator
-from utils.file_utils import save_file, validate_file, get_file_info_from_json, delete_file, get_file_size_display
+# from utils.file_utils import save_file, validate_file, get_file_info_from_json, delete_file, get_file_size_display # AWS 및 파일 업로드 제거로 미사용
 
 
 app = Flask(__name__)
@@ -368,7 +368,8 @@ def view_post(post_id):
         return redirect(url_for('index'))
     
     url_previews = json.loads(post.url_previews) if post.url_previews else []
-    files = get_file_info_from_json(post.files)
+    # files = get_file_info_from_json(post.files) # AWS 제거로 사용 안함
+    files = []
     return render_template('view_post.html', post=post, url_previews=url_previews, files=files)
 
 @app.route('/post/<int:post_id>/comment', methods=['POST'])
@@ -401,14 +402,7 @@ def delete_post(post_id):
         return redirect(url_for('index'))
     
     # S3 제거로 파일 삭제 로직 제거됨
-    # try:
-    #     if post.files and post.files != '[]':
-    #         files = get_file_info_from_json(post.files)
-    #         for file_info in files:
-    #             if 's3_key' in file_info:
-    #                 s3_manager.delete_file(file_info['s3_key'])
-    # except Exception as e:
-    #     print(f"파일 삭제 중 오류: {e}")
+    # S3 제거로 파일 삭제 로직 제거됨
     
     db.session.delete(post)
     db.session.commit()
