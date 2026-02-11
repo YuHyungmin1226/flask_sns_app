@@ -12,7 +12,7 @@
                 </h4>
             </div>
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST">
                     <div class="mb-3">
                         <label for="content" class="form-label">내용</label>
                         <textarea class="form-control" id="content" name="content" rows="6" 
@@ -23,24 +23,9 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="files" class="form-label">
-                            <i class="bi bi-paperclip"></i> 파일 첨부
-                        </label>
-                        <input type="file" class="form-control" id="files" name="files" multiple 
-                               accept="image/*,.pdf,.doc,.docx,.txt,.rtf,.mp4,.avi,.mov,.wmv,.flv,.mkv,.mp3,.wav,.flac,.ogg,.m4a,.zip,.rar,.7z,.tar,.gz">
-                        <div class="form-text">
-                            <i class="bi bi-info-circle"></i> 
-                            최대 10MB까지, 여러 파일을 선택할 수 있습니다.
-                            <br>
-                            <strong>지원 형식:</strong> 이미지(JPG, PNG, GIF), 문서(PDF, DOC, TXT), 동영상(MP4, AVI), 음악(MP3, WAV), 압축파일(ZIP, RAR)
-                        </div>
-                    </div>
+
                     
-                    <div id="file-preview" class="mb-3" style="display: none;">
-                        <label class="form-label">선택된 파일:</label>
-                        <div id="file-list" class="border rounded p-3 bg-light"></div>
-                    </div>
+
                     
                     <div class="mb-3">
                         <div class="form-check">
@@ -91,36 +76,7 @@ document.getElementById('content').addEventListener('input', function() {
     }
 });
 
-// 파일 선택 미리보기
-document.getElementById('files').addEventListener('change', function() {
-    const fileList = document.getElementById('file-list');
-    const filePreview = document.getElementById('file-preview');
-    
-    if (this.files.length > 0) {
-        fileList.innerHTML = '';
-        
-        for (let i = 0; i < this.files.length; i++) {
-            const file = this.files[i];
-            const fileSize = (file.size / 1024 / 1024).toFixed(2);
-            
-            const fileItem = document.createElement('div');
-            fileItem.className = 'd-flex align-items-center mb-2';
-            fileItem.innerHTML = `
-                <i class="bi bi-file-earmark me-2"></i>
-                <div class="flex-grow-1">
-                    <div class="fw-bold">${file.name}</div>
-                    <small class="text-muted">${fileSize} MB</small>
-                </div>
-            `;
-            
-            fileList.appendChild(fileItem);
-        }
-        
-        filePreview.style.display = 'block';
-    } else {
-        filePreview.style.display = 'none';
-    }
-});
+
 
 // URL 미리보기 미리보기 (선택사항)
 document.getElementById('content').addEventListener('blur', function() {

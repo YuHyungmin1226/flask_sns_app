@@ -9,7 +9,7 @@ import uuid
 import json
 from utils.url_utils import URLPreviewGenerator
 from utils.file_utils import save_file, validate_file, get_file_info_from_json, delete_file, get_file_size_display
-from utils.s3_utils import s3_manager
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
@@ -307,46 +307,17 @@ def new_post():
         
         print(f"최종 URL 미리보기: {url_previews}")
         
-        # Railway 배포용 - 파일 업로드 임시 비활성화
-        uploaded_files = []
-        files = request.files.getlist('files')
-        
-        print(f"업로드된 파일 수: {len(files)}")
-        print(f"request.files: {request.files}")
-        print(f"request.form: {request.form}")
-        
-        for file in files:
-            if file and file.filename:
-                print(f"파일명: {file.filename}")
-                print(f"파일 크기: {file.content_length}")
-                print(f"파일 타입: {file.content_type}")
-                
-                # 파일 유효성 검사
-                validation_errors = validate_file(file)
-                if validation_errors:
-                    for error in validation_errors:
-                        flash(error, 'error')
-                    return render_template('new_post.html')
-                
-                # S3에 파일 업로드
-                try:
-                    print(f"📤 파일 업로드 시작: {file.filename} ({file.content_length} bytes)")
-                    file_info = s3_manager.upload_file(file, file.filename)
-                    print(f"✅ S3 업로드 완료: {file_info['file_url']}")
-                    uploaded_files.append(file_info)
-                except Exception as e:
-                    print(f"❌ S3 파일 업로드 중 오류: {e}")
-                    import traceback
-                    traceback.print_exc()
-                    flash(f'파일 업로드 중 오류가 발생했습니다: {str(e)}', 'error')
-                    return render_template('new_post.html')
+        # Railway 배포용 - 파일 업로드 임시 비활성화 (S3 제거로 기능 삭제)
+        # files = request.files.getlist('files')
+
         
         post = Post(
             content=content,
             author_id=current_user.id,
             is_public=is_public,
             url_previews=json.dumps(url_previews, ensure_ascii=False),
-            files=json.dumps(uploaded_files, ensure_ascii=False)
+            # files=json.dumps(uploaded_files, ensure_ascii=False)  # S3 제거로 파일 첨부 기능 삭제
+            files='[]'
         )
         db.session.add(post)
         db.session.commit()
@@ -396,15 +367,15 @@ def delete_post(post_id):
         flash('삭제 권한이 없습니다.', 'error')
         return redirect(url_for('index'))
     
-    # S3에서 첨부된 파일들 삭제
-    try:
-        if post.files and post.files != '[]':
-            files = get_file_info_from_json(post.files)
-            for file_info in files:
-                if 's3_key' in file_info:
-                    s3_manager.delete_file(file_info['s3_key'])
-    except Exception as e:
-        print(f"파일 삭제 중 오류: {e}")
+    # S3 제거로 파일 삭제 로직 제거됨
+    # try:
+    #     if post.files and post.files != '[]':
+    #         files = get_file_info_from_json(post.files)
+    #         for file_info in files:
+    #             if 's3_key' in file_info:
+    #                 s3_manager.delete_file(file_info['s3_key'])
+    # except Exception as e:
+    #     print(f"파일 삭제 중 오류: {e}")
     
     db.session.delete(post)
     db.session.commit()
@@ -448,78 +419,7 @@ def delete_user(user_id):
     flash('사용자가 삭제되었습니다.', 'success')
     return redirect(url_for('admin'))
 
-# 파일 다운로드 (S3 연동)
-@app.route('/download/<path:filename>')
-def download_file(filename):
-    """파일 다운로드/표시 (S3 연동)"""
-    try:
-        # 모든 게시글에서 해당 파일명을 가진 파일 찾기
-        posts = Post.query.all()
-        file_info = None
-        
-        for post in posts:
-            if post.files:
-                files = get_file_info_from_json(post.files)
-                for file in files:
-                    if file['saved_name'] == filename:
-                        file_info = file
-                        break
-                if file_info:
-                    break
-        
-        if file_info and 'file_url' in file_info:
-            # S3 URL로 리다이렉트
-            return redirect(file_info['file_url'])
-        else:
-            flash('파일을 찾을 수 없습니다.', 'error')
-            return redirect(url_for('index'))
-            
-    except Exception as e:
-        print(f"파일 다운로드 오류: {e}")
-        flash('파일을 찾을 수 없습니다.', 'error')
-        return redirect(url_for('index'))
-
-# 파일 삭제 (S3 연동)
-@app.route('/post/<int:post_id>/file/<filename>/delete', methods=['POST'])
-@login_required
-def delete_post_file(post_id, filename):
-    """게시글의 특정 파일 삭제 (S3 연동)"""
-    post = Post.query.get_or_404(post_id)
-    
-    if post.author_id != current_user.id:
-        flash('삭제 권한이 없습니다.', 'error')
-        return redirect(url_for('view_post', post_id=post_id))
-    
-    try:
-        # 파일 정보 가져오기
-        files = get_file_info_from_json(post.files)
-        
-        # 해당 파일 찾기
-        file_to_delete = None
-        for file_info in files:
-            if file_info['saved_name'] == filename:
-                file_to_delete = file_info
-                break
-        
-        if not file_to_delete:
-            flash('파일을 찾을 수 없습니다.', 'error')
-            return redirect(url_for('view_post', post_id=post_id))
-        
-        # S3에서 파일 삭제
-        if s3_manager.delete_file(file_to_delete['s3_key']):
-            # 파일 목록에서 제거
-            files.remove(file_to_delete)
-            post.files = json.dumps(files, ensure_ascii=False)
-            db.session.commit()
-            
-            flash('파일이 삭제되었습니다.', 'success')
-        else:
-            flash('파일 삭제에 실패했습니다.', 'error')
-            
-    except Exception as e:
-        flash('파일 삭제 중 오류가 발생했습니다.', 'error')
-    
-    return redirect(url_for('view_post', post_id=post_id))
+# 파일 다운로드 및 삭제 라우트 제거됨 (S3 제거)
 
 # API 엔드포인트
 @app.route('/api/posts')

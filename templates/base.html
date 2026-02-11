@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}개인 SNS{% endblock %}</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-    
+
     <style>
         :root {
             --bs-primary: #0d6efd;
@@ -21,33 +22,33 @@
             --bs-warning: #ffc107;
             --bs-info: #0dcaf0;
         }
-        
+
         [data-bs-theme="dark"] {
             --bs-body-bg: #212529;
             --bs-body-color: #f8f9fa;
             --bs-card-bg: #343a40;
             --bs-border-color: #495057;
         }
-        
+
         .card {
             transition: transform 0.2s ease-in-out;
         }
-        
+
         .card:hover {
             transform: translateY(-2px);
         }
-        
+
         .post-content {
             white-space: pre-wrap;
             word-wrap: break-word;
         }
-        
+
         .url-previews-container {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
-        
+
         .url-preview {
             border: 1px solid var(--bs-border-color);
             border-radius: 8px;
@@ -55,7 +56,7 @@
             background-color: var(--bs-card-bg);
             width: 100%;
         }
-        
+
         .youtube-preview {
             position: relative;
             width: 100%;
@@ -65,13 +66,13 @@
             padding: 15px;
             background-color: var(--bs-card-bg);
         }
-        
+
         .youtube-preview img {
             width: 100%;
             height: auto;
             border-radius: 8px;
         }
-        
+
         .youtube-preview .play-button {
             position: absolute;
             top: 50%;
@@ -88,13 +89,13 @@
             transition: all 0.3s ease;
             z-index: 10;
         }
-        
+
         .youtube-preview .play-button:hover {
             background: rgba(255, 0, 0, 1);
             transform: translate(-50%, -50%) scale(1.1);
             box-shadow: 0 4px 12px rgba(255, 0, 0, 0.4);
         }
-        
+
         .youtube-preview .youtube-info {
             position: absolute;
             bottom: 0;
@@ -105,17 +106,17 @@
             padding: 20px 15px 15px;
             border-radius: 0 0 8px 8px;
         }
-        
+
         .youtube-preview .youtube-info h6 {
             margin: 0;
             font-size: 0.9rem;
             line-height: 1.3;
         }
-        
+
         .youtube-preview .youtube-info small {
             opacity: 0.8;
         }
-        
+
         .youtube-preview .youtube-actions {
             position: absolute;
             top: 10px;
@@ -123,7 +124,7 @@
             display: flex;
             gap: 5px;
         }
-        
+
         .youtube-preview .youtube-actions .btn {
             background: rgba(0, 0, 0, 0.7);
             border: none;
@@ -133,16 +134,16 @@
             border-radius: 4px;
             transition: all 0.3s ease;
         }
-        
+
         .youtube-preview .youtube-actions .btn:hover {
             background: rgba(0, 0, 0, 0.9);
             transform: scale(1.05);
         }
-        
+
         .navbar-brand {
             font-weight: bold;
         }
-        
+
         .flash-messages {
             position: fixed;
             top: 20px;
@@ -150,102 +151,32 @@
             z-index: 1050;
             max-width: 400px;
         }
-        
+
         .comment-section {
             background-color: var(--bs-card-bg);
             border-radius: 8px;
             padding: 15px;
             margin-top: 15px;
         }
-        
+
         .comment {
             border-left: 3px solid var(--bs-primary);
             padding-left: 15px;
             margin-bottom: 10px;
         }
-        
+
         .comment-author {
             font-weight: bold;
             color: var(--bs-primary);
         }
-        
+
         .comment-time {
             font-size: 0.8em;
             color: var(--bs-secondary);
         }
-        
-        .file-item {
-            transition: transform 0.2s ease-in-out;
-        }
-        
-        .file-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        .attached-files {
-            border-top: 1px solid var(--bs-border-color);
-            padding-top: 1rem;
-        }
-        
-        .file-item .btn {
-            font-size: 0.8rem;
-        }
-        
-        /* 미디어 파일 스타일 */
-        .file-item video,
-        .file-item audio {
-            width: 100% !important;
-            border-radius: 0.375rem;
-        }
-        
-            /* 비디오 가로폭 최적화 - 원본 비율 유지 */
-    .file-item video {
-        width: 100% !important;
-        max-width: 100% !important;
-        object-fit: contain !important;
-    }
-        
-        .file-item img {
-            transition: transform 0.3s ease;
-            border-radius: 0.375rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .file-item img:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        
-        /* 이미지 기본 스타일 */
-        .file-item img {
-            object-fit: contain;
-            background-color: #f8f9fa;
-        }
-        
-        /* 이미지 모달 스타일 */
-        .modal-body img {
-            max-width: 100%;
-            height: auto;
-        }
-        
-        /* 미디어 컨트롤 스타일 */
-        video::-webkit-media-controls {
-            background-color: rgba(0,0,0,0.1);
-        }
-        
-                 audio::-webkit-media-controls {
-             background-color: rgba(0,0,0,0.1);
-         }
-         
-         /* 로그아웃 버튼 구분선 스타일 */
-         .dropdown-item-logout {
-             border-top: 1px solid #dee2e6 !important;
-             margin-top: 0.5rem !important;
-             padding-top: 0.5rem !important;
-         }
-     </style>
+    </style>
 </head>
+
 <body data-bs-theme="light">
     <!-- 네비게이션 바 -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -253,11 +184,12 @@
             <a class="navbar-brand" href="{{ url_for('index') }}">
                 <i class="bi bi-house-heart"></i> 개인 SNS
             </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" title="네비게이션 메뉴 토글">
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                title="네비게이션 메뉴 토글">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if current_user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
@@ -289,14 +221,14 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ url_for('profile') }}">
-                                <i class="bi bi-person"></i> 프로필
-                            </a></li>
+                                    <i class="bi bi-person"></i> 프로필
+                                </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('change_password') }}">
-                                <i class="bi bi-shield-lock"></i> 비밀번호 변경
-                            </a></li>
+                                    <i class="bi bi-shield-lock"></i> 비밀번호 변경
+                                </a></li>
                             <li><a class="dropdown-item text-muted dropdown-item-logout" href="{{ url_for('logout') }}">
-                                <i class="bi bi-box-arrow-right"></i> 로그아웃
-                            </a></li>
+                                    <i class="bi bi-box-arrow-right"></i> 로그아웃
+                                </a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
@@ -340,16 +272,17 @@
     <!-- 플래시 메시지 -->
     <div class="flash-messages">
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="list-unstyled mb-0">{% for category, message in messages %}
-                    <li>
-                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" title="알림 닫기"></button>
-                        </div>
-                    </li>{% endfor %}
-                </ul>
-            {% endif %}
+        {% if messages %}
+        <ul class="list-unstyled mb-0">{% for category, message in messages %}
+            <li>
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+                    role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" title="알림 닫기"></button>
+                </div>
+            </li>{% endfor %}
+        </ul>
+        {% endif %}
         {% endwith %}
     </div>
 
@@ -360,41 +293,42 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         // 다크모드 토글
         function toggleTheme() {
             const body = document.body;
             const currentTheme = body.getAttribute('data-bs-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
+
             body.setAttribute('data-bs-theme', newTheme);
             localStorage.setItem('theme', newTheme);
-            
+
             // 아이콘 변경
             const icon = document.querySelector('.btn-outline-light i');
             icon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
         }
-        
+
         // 페이지 로드 시 테마 복원
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-bs-theme', savedTheme);
-            
+
             const icon = document.querySelector('.btn-outline-light i');
             icon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
         });
-        
+
         // 플래시 메시지 자동 숨김
-        setTimeout(function() {
+        setTimeout(function () {
             const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
+            alerts.forEach(function (alert) {
                 const bsAlert = new bootstrap.Alert(alert);
                 bsAlert.close();
             });
         }, 5000);
     </script>
-    
+
     {% block scripts %}{% endblock %}
 </body>
-</html> 
+
+</html>
