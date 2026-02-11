@@ -158,6 +158,7 @@ def init_db():
                 # SQLite 컬럼 추가 확인을 위한 더미 쿼리 (Postgres 예약어 'user' 충돌 방지를 위해 따옴표 사용)
                 db.session.execute(db.text('SELECT is_approved FROM "user" LIMIT 1'))
             except Exception:
+                db.session.rollback()
                 # 컬럼이 없으면 추가 (SQLite는 ALTER TABLE ADD COLUMN 지원)
                 print("⚠️ User 테이블에 is_approved 컬럼이 없습니다. 추가합니다.")
                 try:
