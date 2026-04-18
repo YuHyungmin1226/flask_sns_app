@@ -164,7 +164,7 @@
                                 <strong class="comment-author">{{ comment.author.username }}</strong>
                                 <small class="text-muted">{{ comment.created_at|korean_time }}</small>
                             </div>
-                            <div class="comment-content mt-1">{{ comment.content }}</div>
+                            <div class="comment-content mt-1" style="white-space: pre-wrap;">{{ comment.content }}</div>
                         </div>
                         {% endfor %}
                     {% else %}
