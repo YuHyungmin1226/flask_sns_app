@@ -9,7 +9,7 @@
             <div class="p-4 p-md-5">
                 <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom border-light">
                     <h3 class="fw-bold mb-0 text-main" style="letter-spacing: -0.03em;">관리자 제어 센터</h3>
-                    <a href="{{ url_for('export_markdown') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm" title="모든 게시물을 마크다운 ZIP으로 내보내기">
+                    <a href="{{ url_for('admin.export_markdown') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm" title="모든 게시물을 마크다운 ZIP으로 내보내기">
                         <i class="bi bi-download me-1"></i> 전체 데이터 백업
                     </a>
                 </div>
@@ -94,10 +94,12 @@
                                     <td class="px-4 py-3 small text-muted">{{ user.created_at|korean_time }}</td>
                                     <td class="px-4 py-3 text-end">
                                         <div class="d-flex gap-2 justify-content-end">
-                                            <form method="POST" action="{{ url_for('approve_user', user_id=user.id) }}" onsubmit="return confirm('승인하시겠습니까?')">
+                                            <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}" onsubmit="return confirm('승인하시겠습니까?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-primary btn-sm px-3" style="border-radius: 6px;">승인</button>
                                             </form>
-                                            <form method="POST" action="{{ url_for('reject_user', user_id=user.id) }}" onsubmit="return confirm('거절하시겠습니까?')">
+                                            <form method="POST" action="{{ url_for('admin.reject_user', user_id=user.id) }}" onsubmit="return confirm('거절하시겠습니까?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-outline-danger btn-sm px-3" style="border-radius: 6px;">거절</button>
                                             </form>
                                         </div>
@@ -140,7 +142,8 @@
                                         {% if user.username == 'admin' %}
                                         <span class="badge bg-danger rounded-pill px-3">Primary Admin</span>
                                         {% else %}
-                                        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" onsubmit="return confirm('영구 삭제하시겠습니까?')">
+                                        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" onsubmit="return confirm('영구 삭제하시겠습니까?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-link text-danger text-decoration-none small p-0 fw-medium">계정 삭제</button>
                                         </form>
                                         {% endif %}
@@ -183,7 +186,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="px-4 py-3 text-end">
-                                        <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-link text-primary text-decoration-none p-0 fw-bold small">검토 <i class="bi bi-chevron-right"></i></a>
+                                        <a href="{{ url_for('main.view_post', post_id=post.id) }}" class="btn btn-link text-primary text-decoration-none p-0 fw-bold small">검토 <i class="bi bi-chevron-right"></i></a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -204,10 +207,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if(newsBotToggle) {
         newsBotToggle.addEventListener('change', function() {
             newsBotToggle.disabled = true;
-            fetch("{{ url_for('toggle_news_bot') }}", {
+            fetch("{{ url_for('admin.toggle_news_bot') }}", {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             })
             .then(response => response.json())
@@ -232,10 +236,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if(weatherBotToggle) {
         weatherBotToggle.addEventListener('change', function() {
             weatherBotToggle.disabled = true;
-            fetch("{{ url_for('toggle_weather_bot') }}", {
+            fetch("{{ url_for('admin.toggle_weather_bot') }}", {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             })
             .then(response => response.json())

@@ -16,6 +16,7 @@
                 </div>
 
                 <form method="POST" class="text-start">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label for="username" class="form-label small fw-semibold">사용자명</label>
                         <input type="text" class="form-control bg-light border-0 py-2" id="username" name="username" required style="border-radius: 8px;">
@@ -38,7 +39,7 @@
                 
                 <div class="mt-4 pt-3 border-top border-light">
                     <p class="mb-2 small text-muted">이미 계정이 있으신가요?</p>
-                    <a href="{{ url_for('login') }}" class="text-primary text-decoration-none small fw-bold">로그인하러 가기</a>
+                    <a href="{{ url_for('auth.login') }}" class="text-primary text-decoration-none small fw-bold">로그인하러 가기</a>
                 </div>
             </div>
         </div>

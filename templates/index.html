@@ -11,146 +11,43 @@
                 <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; font-size: 1.2rem;">
                     <i class="bi bi-pencil-square"></i>
                 </div>
-                <a href="{{ url_for('new_post') }}" class="btn btn-light text-start text-muted flex-grow-1 py-2 px-3 fw-medium" style="border-radius: 20px;">
+                <a href="{{ url_for('main.new_post') }}" class="btn btn-light text-start text-muted flex-grow-1 py-2 px-3 fw-medium" style="border-radius: 20px;">
                     무엇을 공유하고 싶으신가요?
                 </a>
-                <a href="{{ url_for('new_post') }}" class="btn btn-primary d-none d-md-flex align-items-center" style="border-radius: 20px;">
+                <a href="{{ url_for('main.new_post') }}" class="btn btn-primary d-none d-md-flex align-items-center" style="border-radius: 20px;">
                     <i class="bi bi-plus-circle me-1"></i> 올리기
                 </a>
             </div>
         </div>
 
         <!-- 게시글 목록 -->
-        {% if posts %}
-        {% for post in posts %}
-        <div class="card mb-5 border-0 shadow-sm">
-            <div class="p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.2rem;">
-                            {{ post.author.username[0]|upper }}
-                        </div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">{{ post.author.username }}</h6>
-                            <small class="text-muted">{{ post.created_at|korean_time }}</small>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        {% if not post.is_public %}
-                        <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                            <i class="bi bi-lock"></i> 비공개
-                        </span>
-                        {% endif %}
-                        {% if current_user.id == post.author_id %}
-                        <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" class="inline-form" onsubmit="return confirm('정말 삭제하시겠습니까?')">
-                            <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" title="게시글 삭제">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-                {% if post.content %}
-                <div class="post-content mb-3" style="font-size: 1.1rem; color: var(--text-main); word-break: break-word; overflow-wrap: break-word;">{{ post.content }}</div>
-                {% endif %}
-            </div>
-
-            <!-- 첨부 파일 영역 (Edge-to-Edge) -->
-            {% if post.files %}
-            {% set files = post.files|from_json %}
-            <div class="attached-files">
-                {% for file in files %}
-                <div class="border-top border-light">
-                    {% if file.mime_type.startswith('image/') %}
-                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="d-block bg-light">
-                        <img src="{{ file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' }}" 
-                             class="w-100" alt="{{ file.name }}" 
-                             style="max-height: 600px; object-fit: cover; display: block;">
-                    </a>
-                    {% elif file.mime_type.startswith('video/') %}
-                    <div class="ratio ratio-16x9">
-                        <iframe src="{{ file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' }}" allowfullscreen></iframe>
-                    </div>
-                    {% else %}
-                    <div class="px-4 py-3 bg-light border-bottom border-light d-flex align-items-center justify-content-between" style="overflow: hidden;">
-                        <span class="text-truncate small fw-medium text-secondary me-3"><i class="bi bi-paperclip me-2"></i>첨부파일</span>
-                        <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-white border shadow-sm btn-sm text-truncate fw-medium" style="max-width: 70%; flex-shrink: 0; background-color: white;">
-                            {{ file.name }} 다운로드
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
+        <div id="postContainer">
+            {% if posts %}
+                {% for post in posts %}
+                    {% include 'partials/_post_card.html' %}
                 {% endfor %}
-            </div>
-            {% endif %}
-
-                <!-- URL 미리보기 -->
-                {% if post.url_previews %}
-                {% set url_previews = post.url_previews|from_json %}
-                <div class="url-previews-container">
-                    {% for preview in url_previews %}
-                    {% if preview.type == 'youtube' %}
-                    <div class="youtube-preview mb-4 border rounded overflow-hidden shadow-sm">
-                        <div class="youtube-preview-container position-relative bg-dark" style="max-height: 400px;">
-                            <img src="{{ preview.thumbnail_url }}" class="w-100" style="height: 100%; max-height: 400px; object-fit: cover;" alt="{{ preview.title }}">
-                            <button class="play-button"
-                                onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')"
-                                title="유튜브 비디오 재생">
-                                <i class="bi bi-play-fill"></i>
-                            </button>
-                            <div class="youtube-info">
-                                <h6>{{ preview.title }}</h6>
-                                <small>{{ preview.author_name }}</small>
-                            </div>
-                            <div class="youtube-actions">
-                                <button class="btn btn-sm" onclick="window.open('{{ preview.url }}', '_blank')"
-                                    title="새 탭에서 열기">
-                                    <i class="bi bi-box-arrow-up-right"></i>
-                                </button>
-                                <button class="btn btn-sm" onclick="copyYouTubeUrl('{{ preview.url }}')" title="URL 복사">
-                                    <i class="bi bi-link-45deg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="url-preview mb-4 border rounded overflow-hidden shadow-sm">
-                        {% if preview.image_url %}
-                        <div class="url-preview-image-container bg-light bg-opacity-50">
-                            <img src="{{ preview.image_url }}" class="img-fluid w-100 object-fit-cover" style="max-height: 250px;" alt="{{ preview.title }}">
-                        </div>
-                        {% endif %}
-                        <div class="p-3">
-                            <h6 class="mb-1"><a href="{{ preview.url }}" target="_blank" class="text-decoration-none">{{ preview.title }}</a></h6>
-                            {% if preview.description %}
-                            <p class="text-muted small mb-2">{{ preview.description }}</p>
-                            {% endif %}
-                            <small class="text-muted"><i class="bi bi-globe"></i> {{ preview.site_name }}</small>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                <!-- 댓글 수 -->
-                <div class="px-4 pb-4 pt-3">
-                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="text-decoration-none text-muted fw-medium transition-transform hover-primary" style="font-size: 0.95rem;">
-                        <i class="bi bi-chat-dots me-1"></i> 댓글 {{ post.comments|length }}개
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="mt-3">아직 게시글이 없습니다</h4>
+                    <p class="text-muted">첫 번째 게시글을 작성해보세요!</p>
+                    <a href="{{ url_for('main.new_post') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 새 글 작성
                     </a>
                 </div>
-            </div>
-        {% endfor %}
-        {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-inbox display-1 text-muted"></i>
-            <h4 class="mt-3">아직 게시글이 없습니다</h4>
-            <p class="text-muted">첫 번째 게시글을 작성해보세요!</p>
-            <a href="{{ url_for('new_post') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> 새 글 작성
-            </a>
+            {% endif %}
         </div>
-        {% endif %}
+
+        <!-- 무한 스크롤 트리거 -->
+        <div id="infinite-scroll-trigger" class="text-center py-4 {% if not has_next %}d-none{% endif %}">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        
+        <div id="no-more-posts" class="text-center py-4 text-muted {% if has_next or not posts %}d-none{% endif %}">
+            <i class="bi bi-check-circle me-1"></i> 모든 소식을 확인했습니다.
+        </div>
     </div>
 </div>
 
@@ -313,5 +210,87 @@
             });
         });
     });
+    // 무한 스크롤 구현 (Intersection Observer)
+    let currentPage = 1;
+    let isLoading = false;
+    let hasNextPage = {{ 'true' if has_next else 'false' }};
+
+    const trigger = document.getElementById('infinite-scroll-trigger');
+    const container = document.getElementById('postContainer');
+    const noMore = document.getElementById('no-more-posts');
+
+    if (trigger && hasNextPage) {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isLoading && hasNextPage) {
+                loadMorePosts();
+            }
+        }, { threshold: 0.1 });
+
+        observer.observe(trigger);
+    }
+
+    function loadMorePosts() {
+        isLoading = true;
+        currentPage++;
+        
+        fetch(`{{ url_for('main.load_more') }}?page=${currentPage}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            isLoading = false;
+            if (data.html) {
+                container.insertAdjacentHTML('beforeend', data.html);
+                hasNextPage = data.has_next;
+                
+                if (!hasNextPage) {
+                    trigger.classList.add('d-none');
+                    noMore.classList.remove('d-none');
+                }
+
+                // 새로 추가된 게시글의 삭제 폼 이벤트 바인딩 호출
+                bindDeleteEvents();
+            }
+        })
+        .catch(error => {
+            isLoading = false;
+            console.error('Error loading posts:', error);
+        });
+    }
+
+    function bindDeleteEvents() {
+        // 기존 및 새로 추가된 폼 모두 바인딩 (중복 방지 로직 필요시 추가)
+        document.querySelectorAll('.delete-post-form:not([data-bound])').forEach(form => {
+            form.setAttribute('data-bound', 'true');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!confirm('정말 삭제하시겠습니까?')) return;
+                
+                const card = this.closest('.card');
+                const url = this.action;
+                const formData = new FormData(this);
+                
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        card.style.transition = 'all 0.5s ease';
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            card.remove();
+                            SNS.showToast(data.message, 'success');
+                        }, 500);
+                    } else {
+                        SNS.showToast(data.message || '오류가 발생했습니다.', 'error');
+                    }
+                });
+            });
+        });
+    }
 </script>
 {% endblock %}

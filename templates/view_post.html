@@ -25,7 +25,8 @@
                         </span>
                         {% endif %}
                         {% if current_user.id == post.author_id %}
-                        <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" class="inline-form" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                        <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="inline-form" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" title="게시글 삭제">
                                 <i class="bi bi-trash"></i> 삭제
                             </button>
@@ -122,7 +123,8 @@
                 <h5 class="fw-bold mb-4"><i class="bi bi-chat-dots me-2"></i> 댓글 ({{ post.comments|length }})</h5>
 
                 {% if current_user.is_authenticated %}
-                <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="mb-5 bg-white p-4 rounded-4 shadow-sm border border-light">
+                <form method="POST" action="{{ url_for('main.add_comment', post_id=post.id) }}" class="mb-5 bg-white p-4 rounded-4 shadow-sm border border-light">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <textarea class="form-control border-0 bg-light bg-opacity-50 p-3" name="content" rows="3" placeholder="의견을 나누어 보세요..." required style="resize: none; border-radius: 12px;"></textarea>
                     <div class="d-flex justify-content-end mt-3 pe-2">
                         <button type="submit" class="btn btn-primary px-4" style="border-radius: 8px;">게시</button>
@@ -130,7 +132,7 @@
                 </form>
                 {% endif %}
 
-                <div class="comment-list gap-4 d-flex flex-column">
+                <div id="commentList" class="comment-list gap-4 d-flex flex-column">
                     {% if post.comments %}
                         {% for comment in post.comments %}
                         <div class="comment-item bg-white p-4 rounded-4 shadow-sm border border-light border-opacity-50">
@@ -153,7 +155,7 @@
 
         <!-- 뒤로가기 버튼 -->
         <div class="text-center mb-5">
-            <a href="{{ url_for('index') }}" class="btn btn-link text-muted text-decoration-none">
+            <a href="{{ url_for('main.index') }}" class="btn btn-link text-muted text-decoration-none">
                 <i class="bi bi-arrow-left me-1"></i> 소식 목록으로 돌아가기
             </a>
         </div>
@@ -231,6 +233,59 @@
             alert('URL이 복사되었습니다!');
         });
     }
+    // AJAX 댓글 제출
+    document.querySelector('form[action*="/comment"]')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const textarea = form.querySelector('textarea');
+        
+        submitBtn.disabled = true;
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            if (data.success) {
+                const commentList = document.getElementById('commentList');
+                const noComments = commentList.querySelector('.text-center.py-5');
+                if (noComments) noComments.remove();
+                
+                const commentHtml = `
+                    <div class="comment-item bg-white p-4 rounded-4 shadow-sm border border-light border-opacity-50 animate__animated animate__fadeIn">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="fw-bold text-main">${data.comment.author}</span>
+                            <small class="text-muted" style="font-size: 0.75rem;">${data.comment.created_at}</small>
+                        </div>
+                        <div class="comment-content" style="white-space: pre-wrap; color: var(--text-main); line-height: 1.6;">${data.comment.content}</div>
+                    </div>
+                `;
+                commentList.insertAdjacentHTML('afterbegin', commentHtml);
+                textarea.value = '';
+                SNS.showToast(data.message, 'success');
+                
+                // 댓글 숫자 업데이트
+                const countBadge = document.querySelector('h5 .bi-chat-dots')?.parentElement;
+                if (countBadge) {
+                    const currentCount = parseInt(countBadge.textContent.match(/\d+/)[0]);
+                    countBadge.innerHTML = `<i class="bi bi-chat-dots me-2"></i> 댓글 (${currentCount + 1})`;
+                }
+            } else {
+                SNS.showToast(data.message || '댓글 작성 중 오류가 발생했습니다.', 'error');
+            }
+        })
+        .catch(error => {
+            submitBtn.disabled = false;
+            SNS.showToast('통신 오류가 발생했습니다.', 'error');
+        });
+    });
 </script>
 <style>
     .object-fit-cover {

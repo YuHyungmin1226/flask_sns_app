@@ -52,7 +52,7 @@
                     </div>
                     
                     <div class="d-flex justify-content-end align-items-center gap-3 pt-4 border-top border-light">
-                        <a href="{{ url_for('index') }}" class="btn btn-light text-muted fw-bold px-4 py-2" id="cancelBtn" style="border-radius: 10px;">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-light text-muted fw-bold px-4 py-2" id="cancelBtn" style="border-radius: 10px;">
                             취소
                         </a>
                         <button type="submit" class="btn btn-primary px-4 py-2 shadow-sm" id="submitBtn" style="border-radius: 10px;">
@@ -177,6 +177,7 @@ document.getElementById('postForm').addEventListener('submit', function(e) {
     
     xhr.open('POST', form.action, true);
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.setRequestHeader('X-CSRFToken', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
     xhr.send(formData);
 });
 </script>

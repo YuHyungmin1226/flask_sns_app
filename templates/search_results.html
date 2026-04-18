@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}검색 결과: {{ query }} - 개인 SNS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="mb-5">
+            <h4 class="fw-bold text-main" style="letter-spacing: -0.03em;">
+                <i class="bi bi-search me-2"></i> "{{ query }}" 검색 결과
+            </h4>
+            <p class="text-muted">관련된 게시글과 사용자를 모두 찾았습니다.</p>
+        </div>
+
+        <!-- 사용자 검색 결과 -->
+        {% if users %}
+        <div class="mb-5">
+            <h6 class="fw-bold mb-4 text-primary text-uppercase small" style="letter-spacing: 0.1em;">사용자 ({{ users|length }})</h6>
+            <div class="row g-3">
+                {% for user in users %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="p-3 d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-weight: 700;">
+                                {{ user.username[0]|upper }}
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <h6 class="mb-0 fw-bold text-truncate">{{ user.username }}</h6>
+                                <small class="text-muted" style="font-size: 0.75rem;">Member since {{ user.created_at.year }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 게시글 검색 결과 -->
+        <div class="mb-5">
+            <h6 class="fw-bold mb-4 text-primary text-uppercase small" style="letter-spacing: 0.1em;">게시글 ({{ posts|length }})</h6>
+            {% if posts %}
+                <div id="postContainer">
+                {% for post in posts %}
+                    {% include 'partials/_post_card.html' %}
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5 bg-light bg-opacity-50 rounded-4">
+                    <i class="bi bi-chat-square-dots display-4 text-muted opacity-25"></i>
+                    <h5 class="mt-3 fw-bold text-muted">일치하는 게시글이 없습니다</h5>
+                    <p class="text-muted small">다른 검색어를 입력해 보세요.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="text-center mb-5">
+            <a href="{{ url_for('main.index') }}" class="btn btn-link text-muted text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i> 소식 목록으로 가기
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

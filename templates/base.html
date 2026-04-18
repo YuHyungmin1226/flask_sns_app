@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}개인 SNS{% endblock %}</title>
 
     <!-- Bootstrap CSS -->
@@ -243,9 +244,19 @@
         <div class="container">
             <div class="row w-100 mx-auto">
                 <div class="col-lg-8 mx-auto d-flex align-items-center justify-content-between px-0">
-                    <a class="navbar-brand" href="{{ url_for('index') }}">
+                    <a class="navbar-brand me-4" href="{{ url_for('main.index') }}">
                         <i class="bi bi-intersect"></i> FlaskSNS
                     </a>
+
+                    <!-- 검색 창 -->
+                    <form class="d-none d-md-flex flex-grow-1 mx-4" action="{{ url_for('main.search') }}" method="GET">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0 ps-3" style="border-radius: 20px 0 0 20px;">
+                                <i class="bi bi-search text-muted"></i>
+                            </span>
+                            <input class="form-control bg-light border-0 ps-0" type="search" name="q" placeholder="소식이나 친구 검색..." aria-label="Search" style="border-radius: 0 20px 20px 0; font-size: 0.9rem;">
+                        </div>
+                    </form>
                     
                     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                         <span class="navbar-toggler-icon"></span>
@@ -261,18 +272,18 @@
                         </a>
                         <ul class="dropdown-menu">
                             {% if current_user.username == 'admin' %}
-                            <li><a class="dropdown-item fw-bold text-primary" href="{{ url_for('admin') }}">
+                            <li><a class="dropdown-item fw-bold text-primary" href="{{ url_for('admin.admin_dashboard') }}">
                                     <i class="bi bi-gear"></i> 관리자 대시보드
                                 </a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">
                                     <i class="bi bi-person"></i> 프로필
                                 </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('change_password') }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
                                             <i class="bi bi-shield-lock"></i> 비밀번호 변경
                                         </a></li>
-                                    <li><a class="dropdown-item text-muted dropdown-item-logout" href="{{ url_for('logout') }}">
+                                    <li><a class="dropdown-item text-muted dropdown-item-logout" href="{{ url_for('auth.logout') }}">
                                             <i class="bi bi-box-arrow-right"></i> 로그아웃
                                         </a></li>
                                 </ul>
@@ -288,12 +299,12 @@
                         <div class="me-auto"></div>
                         <ul class="navbar-nav">
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('login') }}">
+                                <a class="nav-link" href="{{ url_for('auth.login') }}">
                                     <i class="bi bi-box-arrow-in-right"></i> 로그인
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('register') }}">
+                                <a class="nav-link" href="{{ url_for('auth.register') }}">
                                     <i class="bi bi-person-plus"></i> 회원가입
                                 </a>
                             </li>
@@ -370,6 +381,22 @@
         }, 5000);
     </script>
 
+    <!-- Global JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Flash Messages to Toasts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        SNS.showToast("{{ message }}", "{{ category }}");
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 

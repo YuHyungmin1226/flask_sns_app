@@ -43,7 +43,7 @@
         <!-- 게시물 섹션 타이틀 -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h5 class="fw-bold mb-0 text-main"><i class="bi bi-grid me-2"></i> 내 기록들</h5>
-            <a href="{{ url_for('new_post') }}" class="btn btn-primary btn-sm px-3" style="border-radius: 8px;">새 글 쓰기</a>
+            <a href="{{ url_for('main.new_post') }}" class="btn btn-primary btn-sm px-3" style="border-radius: 8px;">새 글 쓰기</a>
         </div>
 
         <!-- 내 게시글 목록 -->
@@ -67,7 +67,7 @@
                                     </div>
                                 </div>
                                 <div class="ms-3">
-                                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-link text-primary p-0 text-decoration-none fw-bold small">
+                                    <a href="{{ url_for('main.view_post', post_id=post.id) }}" class="btn btn-link text-primary p-0 text-decoration-none fw-bold small">
                                         상세보기 <i class="bi bi-chevron-right ms-1"></i>
                                     </a>
                                 </div>

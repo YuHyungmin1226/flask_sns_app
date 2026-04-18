@@ -1,0 +1,106 @@
+<div class="card mb-5 border-0 shadow-sm post-card" data-post-id="{{ post.id }}">
+    <div class="p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.2rem;">
+                    {{ post.author.username[0]|upper }}
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold">{{ post.author.username }}</h6>
+                    <small class="text-muted">{{ post.created_at|korean_time }}</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                {% if not post.is_public %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                    <i class="bi bi-lock"></i> 비공개
+                </span>
+                {% endif %}
+                {% if current_user.id == post.author_id %}
+                <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="inline-form delete-post-form" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" title="게시글 삭제">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% if post.content %}
+        <div class="post-content mb-3" style="font-size: 1.1rem; color: var(--text-main); word-break: break-word; overflow-wrap: break-word;">{{ post.content }}</div>
+        {% endif %}
+    </div>
+
+    <!-- 첨부 파일 영역 -->
+    {% if post.files %}
+    {% set files = post.files|from_json %}
+    <div class="attached-files">
+        {% for file in files %}
+        <div class="border-top border-light">
+            {% if file.mime_type.startswith('image/') %}
+            <a href="{{ url_for('main.view_post', post_id=post.id) }}" class="d-block bg-light">
+                <img src="{{ file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' }}" 
+                     class="w-100" alt="{{ file.name }}" 
+                     style="max-height: 600px; object-fit: cover; display: block;">
+            </a>
+            {% elif file.mime_type.startswith('video/') %}
+            <div class="ratio ratio-16x9">
+                <iframe src="{{ file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' }}" allowfullscreen></iframe>
+            </div>
+            {% else %}
+            <div class="px-4 py-3 bg-light border-bottom border-light d-flex align-items-center justify-content-between" style="overflow: hidden;">
+                <span class="text-truncate small fw-medium text-secondary me-3"><i class="bi bi-paperclip me-2"></i>첨부파일</span>
+                <a href="{{ url_for('main.view_post', post_id=post.id) }}" class="btn btn-white border shadow-sm btn-sm text-truncate fw-medium" style="max-width: 70%; flex-shrink: 0; background-color: white;">
+                    {{ file.name }} 다운로드
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- URL 미리보기 -->
+    {% if post.url_previews %}
+    {% set url_previews = post.url_previews|from_json %}
+    <div class="url-previews-container px-4">
+        {% for preview in url_previews %}
+            {% if preview.type == 'youtube' %}
+            <div class="youtube-preview mb-4 border rounded overflow-hidden shadow-sm">
+                <div class="youtube-preview-container position-relative bg-dark" style="max-height: 400px;">
+                    <img src="{{ preview.thumbnail_url }}" class="w-100" style="height: 100%; max-height: 400px; object-fit: cover;" alt="{{ preview.title }}">
+                    <button class="play-button" onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')" title="유튜브 비디오 재생">
+                        <i class="bi bi-play-fill"></i>
+                    </button>
+                    <div class="youtube-info">
+                        <h6>{{ preview.title }}</h6>
+                        <small>{{ preview.author_name }}</small>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="url-preview mb-4 border rounded overflow-hidden shadow-sm">
+                {% if preview.image_url %}
+                <div class="url-preview-image-container bg-light bg-opacity-50">
+                    <img src="{{ preview.image_url }}" class="img-fluid w-100 object-fit-cover" style="max-height: 250px;" alt="{{ preview.title }}">
+                </div>
+                {% endif %}
+                <div class="p-3">
+                    <h6 class="mb-1"><a href="{{ preview.url }}" target="_blank" class="text-decoration-none">{{ preview.title }}</a></h6>
+                    {% if preview.description %}
+                    <p class="text-muted small mb-2 text-truncate-2">{{ preview.description }}</p>
+                    {% endif %}
+                    <small class="text-muted"><i class="bi bi-globe"></i> {{ preview.site_name }}</small>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="px-4 pb-4 pt-3 border-top border-light border-opacity-50">
+        <a href="{{ url_for('main.view_post', post_id=post.id) }}" class="text-decoration-none text-muted fw-medium transition-transform hover-primary" style="font-size: 0.95rem;">
+            <i class="bi bi-chat-dots me-1"></i> 댓글 {{ post.comments|length }}개
+        </a>
+    </div>
+</div>
