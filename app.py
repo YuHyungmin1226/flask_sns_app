@@ -99,8 +99,6 @@ def create_app():
             "fenced-code-blocks", 
             "tables", 
             "break-on-newline", 
-            "link-patterns", 
-            "task_list",
             "strike"
         ])
         
