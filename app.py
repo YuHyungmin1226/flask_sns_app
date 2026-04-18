@@ -1,23 +1,25 @@
-from dotenv import load_dotenv
-
-# 환경 변수 로드 (임포트보다 먼저 실행되어야 함)
-load_dotenv()
-
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory, send_file
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta, timezone
 import os
 import sys
-import uuid
 import json
 import io
 import zipfile
 import threading
+from datetime import timedelta
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory, send_file
+from flask_login import login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from concurrent.futures import ThreadPoolExecutor
+from dotenv import load_dotenv
+
+# 내부 모듈 임포트
+from extensions import db, login_manager
+from models import User, Post, Comment, SystemSetting
 from utils.url_utils import URLPreviewGenerator
 from utils.google_drive_utils import drive_manager
+from utils.time_utils import KST, get_korean_time, get_korean_time_for_db
+
+# 환경 변수 로드
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key-change-in-production')
@@ -37,14 +39,18 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # 전체 용량 300MB 제한
+app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024
 
-db = SQLAlchemy(app)
+# 확장 초기화
+db.init_app(app)
+login_manager.init_app(app)
+
+url_preview_generator = URLPreviewGenerator()
 
 # --- 구글 드라이브 DB 동기화 초기화 (Restore) ---
 def restore_db_from_drive():
     try:
-        if not DATABASE_URL: # SQLite 환경에서만 작동
+        if not os.environ.get('DATABASE_URL'): # SQLite 환경에서만 작동
             success = drive_manager.download_database(db_path)
             if success:
                 print(f"[Restore] 구글 드라이브로부터 최신 DB를 복구했습니다.")
@@ -56,19 +62,11 @@ def restore_db_from_drive():
 # 앱 구동 시 즉시 복구 시도
 restore_db_from_drive()
 
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
-url_preview_generator = URLPreviewGenerator()
-KST = timezone(timedelta(hours=9))
-
-def get_korean_time():
-    return datetime.now(KST)
-
-def get_korean_time_for_db():
-    return datetime.now(KST).replace(tzinfo=None)
-
+# 템플릿 필터
 @app.template_filter('from_json')
 def from_json_filter(value):
     if isinstance(value, str):
@@ -88,49 +86,7 @@ def korean_time_filter(dt):
         korean_dt = dt.astimezone(KST)
         return korean_dt.strftime('%Y-%m-%d %H:%M')
 
-# 데이터베이스 모델
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
-    last_login = db.Column(db.DateTime)
-    login_attempts = db.Column(db.Integer, default=0)
-    locked_until = db.Column(db.DateTime)
-    password_changed = db.Column(db.Boolean, default=False)
-    is_approved = db.Column(db.Boolean, default=False)
-    
-    posts = db.relationship('Post', backref='author', lazy=True)
-    comments = db.relationship('Comment', backref='author', lazy=True)
-
-class Post(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=True)
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
-    updated_at = db.Column(db.DateTime, default=get_korean_time_for_db, onupdate=get_korean_time_for_db)
-    is_public = db.Column(db.Boolean, default=True)
-    url_previews = db.Column(db.Text, default='[]')
-    files = db.Column(db.Text, default='[]')
-    
-    comments = db.relationship('Comment', backref='post', lazy=True, cascade='all, delete-orphan')
-
-class Comment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
-
-class SystemSetting(db.Model):
-    key = db.Column(db.String(50), primary_key=True)
-    value = db.Column(db.Text, nullable=True)
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
+# 권한 및 보안 도구
 def is_account_locked(user):
     if user.locked_until and user.locked_until > get_korean_time_for_db():
         return True
@@ -146,31 +102,13 @@ def reset_login_attempts(user):
     user.locked_until = None
     db.session.commit()
 
-@app.route('/ping')
-def ping():
-    return jsonify({
-        'status': 'alive',
-        'timestamp': get_korean_time().isoformat(),
-        'message': 'Flask SNS is running!'
-    })
-
+# 데이터베이스 초기화
 def init_db():
     try:
         with app.app_context():
             db.create_all()
-            try:
-                db.session.execute(db.text('SELECT is_approved FROM "user" LIMIT 1'))
-            except Exception:
-                db.session.rollback()
-                print("User 테이블에 is_approved 컬럼 추가 중...")
-                try:
-                    with db.engine.connect() as conn:
-                        conn.execute(db.text('ALTER TABLE "user" ADD COLUMN is_approved BOOLEAN DEFAULT TRUE'))
-                        conn.commit()
-                    print("is_approved 컬럼이 추가되었습니다.")
-                except Exception as e:
-                    print(f"컬럼 추가 실패: {e}")
             
+            # 관리자 계정 확인 및 생성
             admin_user = User.query.filter_by(username='admin').first()
             if not admin_user:
                 admin_user = User(
@@ -182,16 +120,23 @@ def init_db():
                 db.session.add(admin_user)
                 db.session.commit()
                 print("기본 관리자 계정이 생성 및 승인되었습니다.")
-            else:
-                if not admin_user.is_approved:
-                    admin_user.is_approved = True
-                    db.session.commit()
-                    print("관리자 계정이 활성화되었습니다.")
+            elif not admin_user.is_approved:
+                admin_user.is_approved = True
+                db.session.commit()
+                print("관리자 계정이 활성화되었습니다.")
 
     except Exception as e:
         print(f"데이터베이스 초기화 오류: {e}")
 
 init_db()
+
+@app.route('/ping')
+def ping():
+    return jsonify({
+        'status': 'alive',
+        'timestamp': get_korean_time().isoformat(),
+        'message': 'Flask SNS is running!'
+    })
 
 @app.route('/')
 def index():
@@ -324,22 +269,18 @@ def new_post():
         uploaded_files = []
         files = request.files.getlist('files')
         
-        # 파일 개수 제한 (최대 30개)
         if len(files) > 30:
             flash('파일은 한 번에 최대 30개까지만 첨부할 수 있습니다.', 'error')
             return render_template('new_post.html')
         
-        # 병렬 업로드를 위한 헬퍼 함수
         def upload_single_file(file):
             if not file or not file.filename:
                 return None
             try:
-                # 파일 내용을 메모리에 읽어서 독립적인 스트림 생성 (쓰레드 안전성 확보)
                 file.seek(0)
                 file_content = file.read()
                 temp_stream = io.BytesIO(file_content)
                 
-                # 파일 업로드 (쓰레드별 로컬 드라이브 서비스 사용)
                 file_info = drive_manager.upload_file(
                     temp_stream, 
                     file.filename, 
@@ -348,14 +289,11 @@ def new_post():
                 if file_info:
                     file_id = file_info.get('id')
                     mime_type = file_info.get('mimeType', '')
-                    
                     thumbnail_link = file_info.get('thumbnailLink')
                     if thumbnail_link and mime_type.startswith('image/'):
                         thumbnail_link = thumbnail_link.split('=s')[0] + '=s1000'
                     
-                    embed_link = None
-                    if mime_type.startswith('video/'):
-                        embed_link = f"https://drive.google.com/file/d/{file_id}/preview"
+                    embed_link = f"https://drive.google.com/file/d/{file_id}/preview" if mime_type.startswith('video/') else None
                     
                     return {
                         'id': file_id,
@@ -371,7 +309,6 @@ def new_post():
                 print(f"파일 업로드 실패 ({file.filename}): {e}")
             return None
 
-        # ThreadPoolExecutor를 사용한 병렬 업로드 수행
         uploaded_files = []
         if files and any(f.filename for f in files):
             with ThreadPoolExecutor(max_workers=5) as executor:
@@ -394,15 +331,7 @@ def new_post():
         trigger_db_sync()
         
         flash('게시글이 작성되었습니다!', 'success')
-        
-        # AJAX 요청인 경우 JSON 반환
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({
-                'success': True,
-                'redirect': url_for('index')
-            })
-            
-        return redirect(url_for('index'))
+        return jsonify({'success': True, 'redirect': url_for('index')}) if request.headers.get('X-Requested-With') == 'XMLHttpRequest' else redirect(url_for('index'))
     
     return render_template('new_post.html')
 
@@ -422,16 +351,11 @@ def view_post(post_id):
 def add_comment(post_id):
     post = Post.query.get_or_404(post_id)
     content = request.form.get('content')
-    
     if not content.strip():
         flash('댓글 내용을 입력해주세요.', 'error')
         return redirect(url_for('view_post', post_id=post_id))
     
-    comment = Comment(
-        content=content,
-        author_id=current_user.id,
-        post_id=post_id
-    )
+    comment = Comment(content=content, author_id=current_user.id, post_id=post_id)
     db.session.add(comment)
     db.session.commit()
     trigger_db_sync()
@@ -449,13 +373,11 @@ def delete_post(post_id):
     
     if post.files:
         try:
-            files_to_delete = json.loads(post.files)
-            for file_info in files_to_delete:
-                file_id = file_info.get('id')
-                if file_id:
-                    drive_manager.delete_file(file_id)
+            for file_info in json.loads(post.files):
+                if file_info.get('id'):
+                    drive_manager.delete_file(file_info.get('id'))
         except Exception as e:
-            print(f"파일 삭제 처리 중 오류: {e}")
+            print(f"파일 삭제 오류: {e}")
             
     db.session.delete(post)
     db.session.commit()
@@ -479,12 +401,8 @@ def admin():
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
     pending_users = User.query.filter_by(is_approved=False).all()
-    
-    news_bot = SystemSetting.query.get('news_bot_enabled')
-    news_bot_enabled = news_bot.value == 'True' if news_bot else False
-    
-    weather_bot = SystemSetting.query.get('weather_bot_enabled')
-    weather_bot_enabled = weather_bot.value == 'True' if weather_bot else False
+    news_bot_enabled = SystemSetting.query.get('news_bot_enabled').value == 'True' if SystemSetting.query.get('news_bot_enabled') else False
+    weather_bot_enabled = SystemSetting.query.get('weather_bot_enabled').value == 'True' if SystemSetting.query.get('weather_bot_enabled') else False
     
     return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, news_bot_enabled=news_bot_enabled, weather_bot_enabled=weather_bot_enabled)
 
@@ -492,200 +410,102 @@ def admin():
 @login_required
 def approve_user(user_id):
     if current_user.username != 'admin':
-        flash('관리자 권한이 필요합니다.', 'error')
         return redirect(url_for('index'))
     
     user = User.query.get_or_404(user_id)
     user.is_approved = True
     db.session.commit()
     trigger_db_sync()
-    flash(f'{user.username} 사용자가 승인되었습니다.', 'success')
+    flash(f'{user.username} 승인 완료.', 'success')
     return redirect(url_for('admin'))
 
 @app.route('/admin/user/<int:user_id>/reject', methods=['POST'])
 @login_required
 def reject_user(user_id):
     if current_user.username != 'admin':
-        flash('관리자 권한이 필요합니다.', 'error')
         return redirect(url_for('index'))
     
     user = User.query.get_or_404(user_id)
-    if user.username == 'admin':
-        flash('관리자 계정은 거절할 수 없습니다.', 'error')
-        return redirect(url_for('admin'))
-    
-    db.session.delete(user)
-    db.session.commit()
-    trigger_db_sync()
-    flash(f'{user.username} 가입 요청이 거절되었습니다.', 'warning')
+    if user.username != 'admin':
+        db.session.delete(user)
+        db.session.commit()
+        trigger_db_sync()
+        flash(f'{user.username} 거절 완료.', 'warning')
     return redirect(url_for('admin'))
 
 @app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
 @login_required
 def delete_user(user_id):
     if current_user.username != 'admin':
-        flash('관리자 권한이 필요합니다.', 'error')
         return redirect(url_for('index'))
     
     user = User.query.get_or_404(user_id)
-    if user.username == 'admin':
-        flash('관리자 계정은 삭제할 수 없습니다.', 'error')
-        return redirect(url_for('admin'))
-    
-    db.session.delete(user)
-    db.session.commit()
-    trigger_db_sync()
-    flash('사용자가 삭제되었습니다.', 'success')
+    if user.username != 'admin':
+        db.session.delete(user)
+        db.session.commit()
+        trigger_db_sync()
+        flash('삭제 완료.', 'success')
     return redirect(url_for('admin'))
-
-@app.route('/api/posts')
-def api_posts():
-    posts = Post.query.filter_by(is_public=True).order_by(Post.created_at.desc()).all()
-    posts_data = []
-    for post in posts:
-        posts_data.append({
-            'id': post.id,
-            'content': post.content,
-            'author': post.author.username,
-            'created_at': post.created_at.isoformat(),
-            'comment_count': len(post.comments)
-        })
-    return jsonify(posts_data)
 
 @app.route('/export_markdown')
 @login_required
 def export_markdown():
     if current_user.username != 'admin':
-        flash('관리자만 접근 가능한 기능입니다.', 'error')
         return redirect(url_for('index'))
     
     posts = Post.query.order_by(Post.created_at.desc()).all()
-    
-    # 메모리 내 ZIP 파일 생성을 위한 스트림
     zip_buffer = io.BytesIO()
-    
     with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
         for post in posts:
-            # 마크다운 내용 구성
-            md_content = f"# 게시물 (ID: {post.id})\n"
-            md_content += f"- 작성자: {post.author.username}\n"
-            md_content += f"- 작성일: {post.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
-            md_content += f"- 공개 여부: {'공개' if post.is_public else '비공개'}\n\n"
-            
-            md_content += "## 본문\n"
-            md_content += f"{post.content if post.content else '(내용 없음)'}\n\n"
-            
-            # 첨부 파일 정보
-            if post.files:
-                files = json.loads(post.files)
-                if files:
-                    md_content += "## 첨부 파일\n"
-                    for f in files:
-                        md_content += f"- [{f.get('name')}]({f.get('view_link')})\n"
-                    md_content += "\n"
-            
-            # URL 미리보기 정보
-            if post.url_previews:
-                previews = json.loads(post.url_previews)
-                if previews:
-                    md_content += "## 링크 미리보기\n"
-                    for p in previews:
-                        md_content += f"- [{p.get('title')}]({p.get('url')})\n"
-                    md_content += "\n"
-            
-            # 파일명 생성 (특수문자 제거 및 날짜 포함)
-            safe_date = post.created_at.strftime('%Y%m%d_%H%M%S')
-            filename = f"post_{post.id}_{safe_date}.md"
-            
-            # ZIP에 파일 추가
-            zip_file.writestr(filename, md_content)
+            md = f"# {post.id}\n- User: {post.author.username}\n- Date: {post.created_at}\n\n{post.content}\n"
+            zip_file.writestr(f"post_{post.id}.md", md)
     
-    # 스트림 위치 초기화 후 전송
     zip_buffer.seek(0)
-    
-    filename = f"flask_sns_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
-    return send_file(
-        zip_buffer,
-        mimetype='application/zip',
-        as_attachment=True,
-        download_name=filename
-    )
+    return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name=f"export_{datetime.now().strftime('%Y%m%d')}.zip")
 
 @app.route('/admin/news-bot/toggle', methods=['POST'])
 @login_required
 def toggle_news_bot():
-    if current_user.username != 'admin':
-        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
-        
-    setting = SystemSetting.query.get('news_bot_enabled')
-    if not setting:
-        setting = SystemSetting(key='news_bot_enabled', value='True')
-        db.session.add(setting)
-    else:
-        setting.value = 'False' if setting.value == 'True' else 'True'
-        
+    if current_user.username != 'admin': return jsonify({'success': False}), 403
+    setting = SystemSetting.query.get('news_bot_enabled') or SystemSetting(key='news_bot_enabled', value='True')
+    if not setting.value: db.session.add(setting)
+    setting.value = 'False' if setting.value == 'True' else 'True'
     db.session.commit()
     trigger_db_sync()
-    return jsonify({
-        'success': True, 
-        'enabled': setting.value == 'True',
-        'message': '뉴스 봇이 활성화되었습니다.' if setting.value == 'True' else '뉴스 봇이 비활성화되었습니다.'
-    })
+    return jsonify({'success': True, 'enabled': setting.value == 'True'})
 
 @app.route('/admin/weather-bot/toggle', methods=['POST'])
 @login_required
 def toggle_weather_bot():
-    if current_user.username != 'admin':
-        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
-        
-    setting = SystemSetting.query.get('weather_bot_enabled')
-    if not setting:
-        setting = SystemSetting(key='weather_bot_enabled', value='True')
-        db.session.add(setting)
-    else:
-        setting.value = 'False' if setting.value == 'True' else 'True'
-        
+    if current_user.username != 'admin': return jsonify({'success': False}), 403
+    setting = SystemSetting.query.get('weather_bot_enabled') or SystemSetting(key='weather_bot_enabled', value='True')
+    if not setting.value: db.session.add(setting)
+    setting.value = 'False' if setting.value == 'True' else 'True'
     db.session.commit()
     trigger_db_sync()
-    return jsonify({
-        'success': True, 
-        'enabled': setting.value == 'True',
-        'message': '날씨 봇이 활성화되었습니다.' if setting.value == 'True' else '날씨 봇이 비활성화되었습니다.'
-    })
+    return jsonify({'success': True, 'enabled': setting.value == 'True'})
 
-# APScheduler Background Job 추가
+# APScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 import utils.news_crawler as news_crawler
 import utils.weather_bot as weather_bot
 
 def scheduled_news_task():
-    try:
-        news_crawler.fetch_and_post_news(app, db, Post, SystemSetting, User)
-    except Exception as e:
-        print(f"[NewsBot Error] 스케줄링 실행 중 에러가 발생했습니다: {e}")
+    try: news_crawler.fetch_and_post_news(app, db, Post, SystemSetting, User)
+    except Exception as e: print(f"News Error: {e}")
 
 def scheduled_weather_task():
-    try:
-        weather_bot.fetch_and_post_weather(app, db, Post, SystemSetting, User)
-    except Exception as e:
-        print(f"[WeatherBot Error] 스케줄링 실행 중 에러가 발생했습니다: {e}")
+    try: weather_bot.fetch_and_post_weather(app, db, Post, SystemSetting, User)
+    except Exception as e: print(f"Weather Error: {e}")
 
 def scheduled_db_sync_task():
-    """10분 주기로 DB를 구글 드라이브에 동기화"""
-    try:
-        if not DATABASE_URL:
-            # SQLite 파일 락(Lock) 문제를 방지하기 위해 별도의 백업 기능을 사용할 수도 있으나,
-            # 현재 규모에서는 직접 업로드를 시도합니다.
-            drive_manager.sync_database(db_path)
-    except Exception as e:
-        print(f"[Sync Error] 주기적 DB 백업 중 에러 발생: {e}")
+    try: 
+        if not os.environ.get('DATABASE_URL'): drive_manager.sync_database(db_path)
+    except Exception as e: print(f"Sync Error: {e}")
 
 def trigger_db_sync():
-    """데이터 변경 시 즉시 비동기로 DB 동기화를 실행함"""
-    if not DATABASE_URL:
-        threading.Thread(target=scheduled_db_sync_task).start()
+    if not os.environ.get('DATABASE_URL'): threading.Thread(target=scheduled_db_sync_task).start()
 
-# 스케줄러 인스턴스 생성 및 스케줄 등록
 scheduler = BackgroundScheduler(timezone='Asia/Seoul')
 scheduler.add_job(func=scheduled_news_task, trigger='cron', hour='6,12,18', minute=0)
 scheduler.add_job(func=scheduled_weather_task, trigger='cron', hour=6, minute=0)
@@ -694,5 +514,4 @@ scheduler.start()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"Flask SNS 앱 시작 (Port: {port})")
     app.run(debug=False, host='0.0.0.0', port=port)
