@@ -13,13 +13,34 @@
                 </div>
 
                 <!-- 시스템 자동화 제어 섹션 -->
-                <div class="mb-5 p-4 rounded-4 bg-light border border-secondary border-opacity-10 shadow-sm d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-bold mb-1"><i class="bi bi-robot text-primary me-2"></i>Google News 자동 큐레이션 봇</h5>
-                        <div class="text-muted small">하루 3회(오전 6시, 12시, 오후 6시)에 새로운 기사만 선별하여 피드에 자동 포스팅합니다.</div>
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
+                        <div class="p-4 rounded-4 bg-light border border-secondary border-opacity-10 shadow-sm h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="fw-bold mb-2"><i class="bi bi-robot text-primary me-2"></i>News 큐레이션 봇</h5>
+                                <div class="text-muted small mb-3">하루 3회(오전 6시, 12시, 오후 6시)에 새로운 기사만 선별하여 피드에 포스팅합니다.</div>
+                            </div>
+                            <div class="d-flex justify-content-end align-items-center">
+                                <span class="small fw-bold me-2 text-muted">가동 상태</span>
+                                <div class="form-check form-switch mb-0" style="font-size: 1.5rem;">
+                                    <input class="form-check-input mt-0 cursor-pointer" type="checkbox" role="switch" id="newsBotToggle" {% if news_bot_enabled %}checked{% endif %}>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-check form-switch ms-4 mb-0" style="font-size: 1.5rem;">
-                        <input class="form-check-input mt-0 cursor-pointer" type="checkbox" role="switch" id="newsBotToggle" {% if news_bot_enabled %}checked{% endif %}>
+                    <div class="col-md-6">
+                        <div class="p-4 rounded-4 bg-light border border-secondary border-opacity-10 shadow-sm h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="fw-bold mb-2"><i class="bi bi-cloud-sun text-info me-2"></i>모닝 날씨 비서</h5>
+                                <div class="text-muted small mb-3">매일 아침 6시 정각에 서울 기준 일일 날씨 브리핑을 피드에 포스팅합니다.</div>
+                            </div>
+                            <div class="d-flex justify-content-end align-items-center">
+                                <span class="small fw-bold me-2 text-muted">가동 상태</span>
+                                <div class="form-check form-switch mb-0" style="font-size: 1.5rem;">
+                                    <input class="form-check-input mt-0 cursor-pointer text-info" type="checkbox" role="switch" id="weatherBotToggle" {% if weather_bot_enabled %}checked{% endif %}>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -201,6 +222,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 newsBotToggle.disabled = false;
                 alert('통신 오류가 발생했습니다.');
                 newsBotToggle.checked = !newsBotToggle.checked;
+            });
+        });
+    }
+
+    const weatherBotToggle = document.getElementById('weatherBotToggle');
+    if(weatherBotToggle) {
+        weatherBotToggle.addEventListener('change', function() {
+            weatherBotToggle.disabled = true;
+            fetch("{{ url_for('toggle_weather_bot') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                weatherBotToggle.disabled = false;
+                if(data.success) {
+                    // Update state visually if needed
+                } else {
+                    alert(data.message || '오류가 발생했습니다.');
+                    weatherBotToggle.checked = !weatherBotToggle.checked;
+                }
+            })
+            .catch(error => {
+                weatherBotToggle.disabled = false;
+                alert('통신 오류가 발생했습니다.');
+                weatherBotToggle.checked = !weatherBotToggle.checked;
             });
         });
     }

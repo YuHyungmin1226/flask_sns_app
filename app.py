@@ -461,7 +461,10 @@ def admin():
     news_bot = SystemSetting.query.get('news_bot_enabled')
     news_bot_enabled = news_bot.value == 'True' if news_bot else False
     
-    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, news_bot_enabled=news_bot_enabled)
+    weather_bot = SystemSetting.query.get('weather_bot_enabled')
+    weather_bot_enabled = weather_bot.value == 'True' if weather_bot else False
+    
+    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, news_bot_enabled=news_bot_enabled, weather_bot_enabled=weather_bot_enabled)
 
 @app.route('/admin/user/<int:user_id>/approve', methods=['POST'])
 @login_required
@@ -603,9 +606,30 @@ def toggle_news_bot():
         'message': '뉴스 봇이 활성화되었습니다.' if setting.value == 'True' else '뉴스 봇이 비활성화되었습니다.'
     })
 
+@app.route('/admin/weather-bot/toggle', methods=['POST'])
+@login_required
+def toggle_weather_bot():
+    if current_user.username != 'admin':
+        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+    setting = SystemSetting.query.get('weather_bot_enabled')
+    if not setting:
+        setting = SystemSetting(key='weather_bot_enabled', value='True')
+        db.session.add(setting)
+    else:
+        setting.value = 'False' if setting.value == 'True' else 'True'
+        
+    db.session.commit()
+    return jsonify({
+        'success': True, 
+        'enabled': setting.value == 'True',
+        'message': '날씨 봇이 활성화되었습니다.' if setting.value == 'True' else '날씨 봇이 비활성화되었습니다.'
+    })
+
 # APScheduler Background Job 추가
 from apscheduler.schedulers.background import BackgroundScheduler
 import utils.news_crawler as news_crawler
+import utils.weather_bot as weather_bot
 
 def scheduled_news_task():
     try:
@@ -613,9 +637,16 @@ def scheduled_news_task():
     except Exception as e:
         print(f"[NewsBot Error] 스케줄링 실행 중 에러가 발생했습니다: {e}")
 
+def scheduled_weather_task():
+    try:
+        weather_bot.fetch_and_post_weather(app, db, Post, SystemSetting, User)
+    except Exception as e:
+        print(f"[WeatherBot Error] 스케줄링 실행 중 에러가 발생했습니다: {e}")
+
 # 스케줄러 인스턴스 생성 및 스케줄 등록
 scheduler = BackgroundScheduler(timezone='Asia/Seoul')
 scheduler.add_job(func=scheduled_news_task, trigger='cron', hour='6,12,18', minute=0)
+scheduler.add_job(func=scheduled_weather_task, trigger='cron', hour=6, minute=0)
 scheduler.start()
 
 if __name__ == '__main__':
