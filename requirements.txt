@@ -29,3 +29,5 @@ google-api-python-client
 google-auth
 google-auth-httplib2
 google-auth-oauthlib
+APScheduler==3.10.4
+feedparser==6.0.11

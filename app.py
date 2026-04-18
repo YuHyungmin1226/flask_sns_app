@@ -105,6 +105,11 @@ class Comment(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
 
+class SystemSetting(db.Model):
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.Text, nullable=True)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -452,7 +457,11 @@ def admin():
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
     pending_users = User.query.filter_by(is_approved=False).all()
-    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users)
+    
+    news_bot = SystemSetting.query.get('news_bot_enabled')
+    news_bot_enabled = news_bot.value == 'True' if news_bot else False
+    
+    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, news_bot_enabled=news_bot_enabled)
 
 @app.route('/admin/user/<int:user_id>/approve', methods=['POST'])
 @login_required
@@ -573,6 +582,41 @@ def export_markdown():
         as_attachment=True,
         download_name=filename
     )
+
+@app.route('/admin/news-bot/toggle', methods=['POST'])
+@login_required
+def toggle_news_bot():
+    if current_user.username != 'admin':
+        return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+    setting = SystemSetting.query.get('news_bot_enabled')
+    if not setting:
+        setting = SystemSetting(key='news_bot_enabled', value='True')
+        db.session.add(setting)
+    else:
+        setting.value = 'False' if setting.value == 'True' else 'True'
+        
+    db.session.commit()
+    return jsonify({
+        'success': True, 
+        'enabled': setting.value == 'True',
+        'message': '뉴스 봇이 활성화되었습니다.' if setting.value == 'True' else '뉴스 봇이 비활성화되었습니다.'
+    })
+
+# APScheduler Background Job 추가
+from apscheduler.schedulers.background import BackgroundScheduler
+import utils.news_crawler as news_crawler
+
+def scheduled_news_task():
+    try:
+        news_crawler.fetch_and_post_news(app, db, Post, SystemSetting, User)
+    except Exception as e:
+        print(f"[NewsBot Error] 스케줄링 실행 중 에러가 발생했습니다: {e}")
+
+# 스케줄러 인스턴스 생성 및 스케줄 등록
+scheduler = BackgroundScheduler(timezone='Asia/Seoul')
+scheduler.add_job(func=scheduled_news_task, trigger='cron', hour='6,12,18', minute=0)
+scheduler.start()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
