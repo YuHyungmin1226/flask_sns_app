@@ -118,9 +118,9 @@
                 <h5 class="fw-bold mb-4"><i class="bi bi-chat-dots me-2"></i> 댓글 ({{ post.comments|length }})</h5>
 
                 {% if current_user.is_authenticated %}
-                <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="mb-5 bg-white p-3 rounded-4 shadow-sm">
-                    <textarea class="form-control border-0 shadow-none" name="content" rows="3" placeholder="의견을 나누어 보세요..." required style="resize: none;"></textarea>
-                    <div class="d-flex justify-content-end mt-2">
+                <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="mb-5 bg-white p-4 rounded-4 shadow-sm border border-light">
+                    <textarea class="form-control border-0 bg-light bg-opacity-50 p-3" name="content" rows="3" placeholder="의견을 나누어 보세요..." required style="resize: none; border-radius: 12px;"></textarea>
+                    <div class="d-flex justify-content-end mt-3 pe-2">
                         <button type="submit" class="btn btn-primary px-4" style="border-radius: 8px;">게시</button>
                     </div>
                 </form>
