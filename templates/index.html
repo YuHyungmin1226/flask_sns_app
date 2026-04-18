@@ -5,11 +5,19 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-8 mx-auto">
-        <!-- 새 글 작성 버튼 -->
-        <div class="mb-4">
-            <a href="{{ url_for('new_post') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> 새 글 작성
-            </a>
+        <!-- 새 글 작성 버튼 영역 -->
+        <div class="card mb-4 border-0 shadow-sm bg-white">
+            <div class="p-3 d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; font-size: 1.2rem;">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+                <a href="{{ url_for('new_post') }}" class="btn btn-light text-start text-muted flex-grow-1 py-2 px-3 fw-medium" style="border-radius: 20px;">
+                    무엇을 공유하고 싶으신가요?
+                </a>
+                <a href="{{ url_for('new_post') }}" class="btn btn-primary d-none d-md-flex align-items-center" style="border-radius: 20px;">
+                    <i class="bi bi-plus-circle me-1"></i> 올리기
+                </a>
+            </div>
         </div>
 
         <!-- 게시글 목록 -->
@@ -42,7 +50,9 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="post-content mb-3" style="font-size: 1.1rem; color: var(--text-main);">{{ post.content }}</div>
+                {% if post.content %}
+                <div class="post-content mb-3" style="font-size: 1.1rem; color: var(--text-main); word-break: break-word; overflow-wrap: break-word;">{{ post.content }}</div>
+                {% endif %}
             </div>
 
             <!-- 첨부 파일 영역 (Edge-to-Edge) -->
@@ -62,9 +72,10 @@
                         <iframe src="{{ file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' }}" allowfullscreen></iframe>
                     </div>
                     {% else %}
-                    <div class="p-4 bg-light text-center border-bottom border-light">
-                        <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-file-earmark-arrow-down me-2"></i> {{ file.name }} 다운로드
+                    <div class="px-4 py-3 bg-light border-bottom border-light d-flex align-items-center justify-content-between" style="overflow: hidden;">
+                        <span class="text-truncate small fw-medium text-secondary me-3"><i class="bi bi-paperclip me-2"></i>첨부파일</span>
+                        <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-white border shadow-sm btn-sm text-truncate fw-medium" style="max-width: 70%; flex-shrink: 0; background-color: white;">
+                            {{ file.name }} 다운로드
                         </a>
                     </div>
                     {% endif %}
