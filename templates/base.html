@@ -222,6 +222,11 @@
                         <a class="nav-link" href="{{ url_for('admin') }}">
                             <i class="bi bi-gear"></i> 관리자
                         </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('export_markdown') }}" title="모든 게시물을 마크다운 ZIP으로 내보내기">
+                            <i class="bi bi-download"></i> 전체 내보내기
+                        </a>
                     </li>{% endif %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">

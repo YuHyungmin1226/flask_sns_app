@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 # 환경 변수 로드 (임포트보다 먼저 실행되어야 함)
 load_dotenv()
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -13,6 +13,7 @@ import sys
 import uuid
 import json
 import io
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from utils.url_utils import URLPreviewGenerator
 from utils.google_drive_utils import drive_manager
@@ -512,6 +513,65 @@ def api_posts():
             'comment_count': len(post.comments)
         })
     return jsonify(posts_data)
+
+@app.route('/export_markdown')
+@login_required
+def export_markdown():
+    if current_user.username != 'admin':
+        flash('관리자만 접근 가능한 기능입니다.', 'error')
+        return redirect(url_for('index'))
+    
+    posts = Post.query.order_by(Post.created_at.desc()).all()
+    
+    # 메모리 내 ZIP 파일 생성을 위한 스트림
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
+        for post in posts:
+            # 마크다운 내용 구성
+            md_content = f"# 게시물 (ID: {post.id})\n"
+            md_content += f"- 작성자: {post.author.username}\n"
+            md_content += f"- 작성일: {post.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
+            md_content += f"- 공개 여부: {'공개' if post.is_public else '비공개'}\n\n"
+            
+            md_content += "## 본문\n"
+            md_content += f"{post.content if post.content else '(내용 없음)'}\n\n"
+            
+            # 첨부 파일 정보
+            if post.files:
+                files = json.loads(post.files)
+                if files:
+                    md_content += "## 첨부 파일\n"
+                    for f in files:
+                        md_content += f"- [{f.get('name')}]({f.get('view_link')})\n"
+                    md_content += "\n"
+            
+            # URL 미리보기 정보
+            if post.url_previews:
+                previews = json.loads(post.url_previews)
+                if previews:
+                    md_content += "## 링크 미리보기\n"
+                    for p in previews:
+                        md_content += f"- [{p.get('title')}]({p.get('url')})\n"
+                    md_content += "\n"
+            
+            # 파일명 생성 (특수문자 제거 및 날짜 포함)
+            safe_date = post.created_at.strftime('%Y%m%d_%H%M%S')
+            filename = f"post_{post.id}_{safe_date}.md"
+            
+            # ZIP에 파일 추가
+            zip_file.writestr(filename, md_content)
+    
+    # 스트림 위치 초기화 후 전송
+    zip_buffer.seek(0)
+    
+    filename = f"flask_sns_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=filename
+    )
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
