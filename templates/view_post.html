@@ -35,7 +35,7 @@
                     </div>
                 </div>
 
-                <div class="post-content mb-5" style="font-size: 1.2rem; line-height: 1.8; color: var(--text-main);">{{ post.content }}</div>
+                <div class="post-content mb-5" style="font-size: 1.2rem; line-height: 1.8; color: var(--text-main);">{{ post.content|markdown }}</div>
 
                 <!-- 첨부 파일 (구글 드라이브, Edge-to-Edge) -->
                 {% if files %}

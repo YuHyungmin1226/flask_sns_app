@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_talisman import Talisman
 from dotenv import load_dotenv
+import markdown2
+import bleach
+from markupsafe import Markup
 
 # 내부 모듈 임포트
 from extensions import db, login_manager, csrf
@@ -87,6 +90,38 @@ def create_app():
         if dt is None: return ""
         if dt.tzinfo is None: return dt.strftime('%Y-%m-%d %H:%M')
         else: return dt.astimezone(KST).strftime('%Y-%m-%d %H:%M')
+
+    @app.template_filter('markdown')
+    def markdown_filter(text):
+        if not text: return ""
+        # Convert Markdown to HTML with common extras
+        html = markdown2.markdown(text, extras=[
+            "fenced-code-blocks", 
+            "tables", 
+            "break-on-newline", 
+            "link-patterns", 
+            "task_list",
+            "strike"
+        ])
+        
+        # Define allowed tags for sanitization (keeping it secure but rich)
+        allowed_tags = bleach.sanitizer.ALLOWED_TAGS | {
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr', 
+            'pre', 'code', 'blockquote', 'table', 'thead', 'tbody', 
+            'tr', 'th', 'td', 'span', 'del', 'ins', 'details', 'summary'
+        }
+        allowed_attrs = bleach.sanitizer.ALLOWED_ATTRIBUTES.copy()
+        allowed_attrs.update({
+            'code': ['class'],
+            'span': ['class'],
+            'th': ['style'],
+            'td': ['style'],
+            'a': ['href', 'title', 'target']
+        })
+        
+        # Sanitize the HTML
+        clean_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs)
+        return Markup(clean_html)
 
     # 구글 드라이브 DB 복구
     if db_path and not DATABASE_URL:
