@@ -250,23 +250,7 @@
 
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if current_user.is_authenticated %}
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="bi bi-house"></i> 홈
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('new_post') }}">
-                            <i class="bi bi-plus-circle"></i> 새 글
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('profile') }}">
-                            <i class="bi bi-person"></i> 프로필
-                        </a>
-                    </li>
-                </ul>
+                <div class="me-auto"></div>
                 <ul class="navbar-nav">{% if current_user.username == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin') }}">
@@ -302,13 +286,7 @@
                     </li>
                 </ul>
                 {% else %}
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <span class="nav-link">
-                            <!-- 비로그인 상태에서는 왼쪽 메뉴가 없으므로 빈 공간 -->
-                        </span>
-                    </li>
-                </ul>
+                <div class="me-auto"></div>
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">
