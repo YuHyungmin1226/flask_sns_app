@@ -85,8 +85,8 @@
                     {% for preview in url_previews %}
                         {% if preview.type == 'youtube' %}
                         <div class="youtube-preview mb-4 border rounded overflow-hidden shadow-sm">
-                            <div class="youtube-preview-container ratio ratio-16x9">
-                                <img src="{{ preview.thumbnail_url }}" class="img-fluid w-100 h-100 object-fit-cover" alt="{{ preview.title }}">
+                            <div class="youtube-preview-container position-relative bg-dark" style="max-height: 400px;">
+                                <img src="{{ preview.thumbnail_url }}" class="w-100" style="height: 100%; max-height: 400px; object-fit: cover;" alt="{{ preview.title }}">
                                 <button class="play-button" onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')" title="재생">
                                     <i class="bi bi-play-fill"></i>
                                 </button>
