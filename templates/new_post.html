@@ -13,28 +13,28 @@
                 </div>
 
                 <form method="POST" enctype="multipart/form-data" id="postForm">
-                    <div class="mb-4">
-                        <textarea class="form-control border-light-subtle" id="content" name="content" rows="8" 
-                                  style="font-size: 1.1rem; border-radius: 12px; transition: var(--transition);"
+                    <div class="mb-4 position-relative">
+                        <textarea class="form-control border-light-subtle pb-4" id="content" name="content" rows="8" 
+                                  style="font-size: 1.1rem; border-radius: 12px; transition: var(--transition); resize: none;"
                                   placeholder="내용을 입력하세요 (URL 포함 시 미리보기가 자동 생성됩니다)"></textarea>
+                        <div id="char-counter" class="position-absolute bottom-0 end-0 p-3 small text-muted font-monospace">0 / 2000</div>
                     </div>
                     
-                    <div class="mb-4 p-4 rounded-4 bg-light bg-opacity-50 border border-light">
-                        <label for="files" class="form-label fw-semibold mb-2">
-                            <i class="bi bi-paperclip me-1"></i> 파일 첨부
-                        </label>
-                        <input type="file" class="form-control border-0 shadow-none bg-white" id="files" name="files" multiple style="border-radius: 10px;">
-                        <div class="form-text mt-2 small">
-                            <i class="bi bi-info-circle me-1"></i> 
-                            이미지, 영상 등 <strong class="text-main fw-bold">최대 30개(총 300MB)</strong>까지 첨부 가능합니다.
+                    <div class="mb-4">
+                        <div class="p-5 rounded-4 bg-light text-center transition-transform" style="border: 2px dashed var(--bs-border-color); position: relative; cursor: pointer;">
+                            <input type="file" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" id="files" name="files" multiple style="cursor: pointer; z-index: 2;">
+                            <i class="bi bi-cloud-arrow-up display-4 text-primary opacity-75 mb-3"></i>
+                            <h6 class="fw-bold mb-2">여기를 클릭하여 파일을 추가하세요</h6>
+                            <p class="text-muted small mb-0"><strong class="text-main fw-bold">최대 30개(총 300MB)</strong>까지 첨부 가능</p>
+                            <div id="fileList" class="mt-3 text-start small text-secondary d-none position-relative" style="z-index: 3;"></div>
                         </div>
                     </div>
                     
-                    <div class="mb-4">
-                        <div class="form-check form-switch p-0 d-flex align-items-center gap-3">
-                            <input class="form-check-input ms-0 mt-0" type="checkbox" id="is_public" name="is_public" checked style="width: 3em; height: 1.5em; cursor: pointer;">
-                            <label class="form-check-label fw-medium" for="is_public" style="cursor: pointer;">
-                                <i class="bi bi-globe me-1"></i> 공개로 게시함
+                    <div class="mb-5 px-2 d-flex align-items-center">
+                        <div class="form-check form-switch d-flex align-items-center gap-2 m-0 p-0">
+                            <input class="form-check-input mt-0" type="checkbox" id="is_public" name="is_public" checked style="width: 2.8em; height: 1.4em; cursor: pointer; margin-left: 0;">
+                            <label class="form-check-label fw-medium ms-2" for="is_public" style="cursor: pointer; padding-top: 2px;">
+                                <i class="bi bi-globe me-1 text-primary"></i> 공개 게시
                             </label>
                         </div>
                     </div>
@@ -51,11 +51,11 @@
                         </div>
                     </div>
                     
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-light">
-                        <a href="{{ url_for('index') }}" class="btn btn-link text-muted text-decoration-none fw-medium" id="cancelBtn">
-                            <i class="bi bi-arrow-left me-1"></i> 취소
+                    <div class="d-flex justify-content-end align-items-center gap-3 pt-4 border-top border-light">
+                        <a href="{{ url_for('index') }}" class="btn btn-light text-muted fw-bold px-4 py-2" id="cancelBtn" style="border-radius: 10px;">
+                            취소
                         </a>
-                        <button type="submit" class="btn btn-primary px-4 py-2" id="submitBtn" style="border-radius: 10px;">
+                        <button type="submit" class="btn btn-primary px-4 py-2 shadow-sm" id="submitBtn" style="border-radius: 10px;">
                             <i class="bi bi-send-fill me-2"></i> 게시글 완성하기
                         </button>
                     </div>
@@ -67,23 +67,36 @@
 
 <script>
 // 실시간 글자 수 카운터
-document.getElementById('content').addEventListener('input', function() {
-    const maxLength = 2000;
-    const currentLength = this.value.length;
-    const remaining = maxLength - currentLength;
-    
-    let counter = document.getElementById('char-counter');
-    if (!counter) {
-        counter = document.createElement('div');
-        counter.id = 'char-counter';
-        counter.className = 'form-text';
-        this.parentNode.appendChild(counter);
-    }
-    
-    if (remaining < 0) {
-        counter.innerHTML = `<span class="text-danger">글자 수 초과: ${Math.abs(remaining)}자</span>`;
+const textarea = document.getElementById('content');
+const counter = document.getElementById('char-counter');
+const maxLength = 2000;
+
+function updateCounter() {
+    const currentLength = textarea.value.length;
+    if (currentLength > maxLength) {
+        counter.innerHTML = `<span class="text-danger fw-bold">${currentLength} / ${maxLength} (초과)</span>`;
+        textarea.value = textarea.value.substring(0, maxLength);
     } else {
-        counter.innerHTML = `글자 수: ${currentLength}/${maxLength}`;
+        counter.innerText = `${currentLength} / ${maxLength}`;
+    }
+}
+textarea.addEventListener('input', updateCounter);
+// 초기 화면에서도 카운터 적용
+updateCounter();
+
+// 파일 목록 동적 표시
+document.getElementById('files').addEventListener('change', function(e) {
+    const fileListObj = document.getElementById('fileList');
+    if (this.files.length > 0) {
+        fileListObj.classList.remove('d-none');
+        let fileNames = Array.from(this.files).map(f => `<i class="bi bi-file-earmark me-2"></i>${f.name}`).join('<br>');
+        fileListObj.innerHTML = `<div class="p-3 bg-white rounded-3 border border-light mt-2" style="max-height: 120px; overflow-y: auto;">
+                                    <strong class="d-block mb-2 text-dark border-bottom border-light pb-1">선택된 첨부파일 (${this.files.length}개)</strong>
+                                    <div class="text-dark" style="line-height: 1.6;">${fileNames}</div>
+                                 </div>`;
+    } else {
+        fileListObj.classList.add('d-none');
+        fileListObj.innerHTML = '';
     }
 });
 
