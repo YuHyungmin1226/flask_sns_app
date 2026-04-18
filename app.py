@@ -341,6 +341,14 @@ def new_post():
         db.session.commit()
         
         flash('게시글이 작성되었습니다!', 'success')
+        
+        # AJAX 요청인 경우 JSON 반환
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True,
+                'redirect': url_for('index')
+            })
+            
         return redirect(url_for('index'))
     
     return render_template('new_post.html')

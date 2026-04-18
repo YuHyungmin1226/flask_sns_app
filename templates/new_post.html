@@ -12,7 +12,7 @@
                 </h4>
             </div>
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" id="postForm">
                     <div class="mb-3">
                         <label for="content" class="form-label">내용</label>
                         <textarea class="form-control" id="content" name="content" rows="6" 
@@ -45,11 +45,26 @@
                         </div>
                     </div>
                     
+                    <!-- 업로드 프로그레스 바 -->
+                    <div id="uploadProgressContainer" class="mb-3 d-none">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span id="uploadStatusText" class="small fw-bold text-primary">업로드 중...</span>
+                            <span id="uploadPercentage" class="small fw-bold text-primary">0%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div id="uploadDetails" class="small text-muted mt-1 text-center">
+                            대용량 파일의 경우 시간이 다소 소요될 수 있습니다. 창을 닫지 마세요.
+                        </div>
+                    </div>
+                    
                     <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary" id="cancelBtn">
                             <i class="bi bi-arrow-left"></i> 취소
                         </a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
                             <i class="bi bi-send"></i> 게시하기
                         </button>
                     </div>
@@ -66,7 +81,6 @@ document.getElementById('content').addEventListener('input', function() {
     const currentLength = this.value.length;
     const remaining = maxLength - currentLength;
     
-    // 글자 수 표시 업데이트
     let counter = document.getElementById('char-counter');
     if (!counter) {
         counter = document.createElement('div');
@@ -82,23 +96,76 @@ document.getElementById('content').addEventListener('input', function() {
     }
 });
 
-// URL 미리보기 미리보기 (선택사항)
-document.getElementById('content').addEventListener('blur', function() {
-    const content = this.value;
-    const urlPattern = /https?:\/\/[^\s]+/g;
-    const urls = content.match(urlPattern);
+// 폼 제출 처리 (비동기 업로드)
+document.getElementById('postForm').addEventListener('submit', function(e) {
+    e.preventDefault();
     
-    if (urls && urls.length > 0) {
-        // URL이 감지되면 미리보기 영역 표시
-        let previewArea = document.getElementById('url-preview-area');
-        if (!previewArea) {
-            previewArea = document.createElement('div');
-            previewArea.id = 'url-preview-area';
-            previewArea.className = 'mt-3 p-3 border rounded bg-light';
-            previewArea.innerHTML = '<small class="text-muted"><i class="bi bi-info-circle"></i> URL이 감지되었습니다. 게시 시 미리보기가 생성됩니다.</small>';
-            this.parentNode.appendChild(previewArea);
+    const form = this;
+    const formData = new FormData(form);
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const progressContainer = document.getElementById('uploadProgressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('uploadPercentage');
+    const statusText = document.getElementById('uploadStatusText');
+    
+    // UI 업데이트: 버튼 비활성화 및 프로그레스 바 표시
+    submitBtn.disabled = true;
+    cancelBtn.classList.add('disabled');
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 처리 중...';
+    progressContainer.classList.remove('d-none');
+    
+    const xhr = new XMLHttpRequest();
+    
+    // 업로드 진행 이벤트
+    xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percentComplete + '%';
+            progressBar.setAttribute('aria-valuenow', percentComplete);
+            progressPercent.innerText = percentComplete + '%';
+            
+            if (percentComplete === 100) {
+                statusText.innerText = '서버에서 처리 중... 잠시만 기다려 주세요.';
+                progressBar.classList.add('bg-success');
+            }
         }
-    }
+    };
+    
+    // 완료 처리
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success && response.redirect) {
+                    window.location.href = response.redirect;
+                } else {
+                    location.reload(); // 폴백
+                }
+            } catch (err) {
+                window.location.href = '/'; // 기본 이동
+            }
+        } else {
+            alert('게시글 저장 중 오류가 발생했습니다.');
+            submitBtn.disabled = false;
+            cancelBtn.classList.remove('disabled');
+            submitBtn.innerHTML = '<i class="bi bi-send"></i> 게시하기';
+            progressContainer.classList.add('d-none');
+        }
+    };
+    
+    // 에러 처리
+    xhr.onerror = function() {
+        alert('네트워크 오류가 발생했습니다.');
+        submitBtn.disabled = false;
+        cancelBtn.classList.remove('disabled');
+        submitBtn.innerHTML = '<i class="bi bi-send"></i> 게시하기';
+        progressContainer.classList.add('d-none');
+    };
+    
+    xhr.open('POST', form.action, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.send(formData);
 });
 </script>
 {% endblock %}
