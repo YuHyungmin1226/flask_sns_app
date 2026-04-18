@@ -19,6 +19,7 @@ def fetch_and_post_weather(app, db, Post, SystemSetting, User):
         try:
             # 타임아웃 10초, 한국어 결과 플래그
             r = requests.get('https://wttr.in/Seoul?format=j1&lang=ko', timeout=10)
+            r.encoding = 'utf-8'  # 응답 인코딩을 명시적으로 UTF-8로 지정 (한글 깨짐 방지)
             data = r.json()
             
             # 데이터 추출
@@ -62,14 +63,14 @@ def fetch_and_post_weather(app, db, Post, SystemSetting, User):
             kst = pytz.timezone('Asia/Seoul')
             date_str = datetime.now(kst).strftime('%Y년 %m월 %d일')
             
-            # 본문 마크다운 조합
-            content = f"**{date_str} 오늘의 아침 날씨 (서울)**\n\n"
-            content += f"• **상태**: {icon} {weather_desc}\n"
-            content += f"• **현재 기온**: **{temp}℃** (체감 {feels_like}℃)\n"
-            content += f"• **최저 / 최고**: {min_temp}℃ / {max_temp}℃\n"
-            content += f"• **강수 확률**: {chance_of_rain}% (오전 기준)\n"
-            content += f"• **습도**: {humidity}%\n\n"
-            content += "> 오늘도 활기찬 하루 보내시길 바랍니다! ☕"
+            # 본문 평문 조합 (마크다운 제거)
+            content = f"[{date_str}] 오늘의 아침 날씨 (서울)\n\n"
+            content += f"• 상태: {icon} {weather_desc}\n"
+            content += f"• 현재 기온: {temp}℃ (체감 {feels_like}℃)\n"
+            content += f"• 최저 / 최고: {min_temp}℃ / {max_temp}℃\n"
+            content += f"• 강수 확률: {chance_of_rain}% (오전 기준)\n"
+            content += f"• 습도: {humidity}%\n\n"
+            content += "오늘도 활기찬 하루 보내시길 바랍니다! ☕"
             
             admin = User.query.filter_by(username='admin').first()
             if not admin:
