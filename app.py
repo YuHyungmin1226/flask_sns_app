@@ -7,6 +7,7 @@ import os
 import sys
 import uuid
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from utils.url_utils import URLPreviewGenerator
 from utils.google_drive_utils import drive_manager
@@ -294,8 +295,12 @@ def new_post():
         uploaded_files = []
         files = request.files.getlist('files')
         
-        for file in files:
-            if file and file.filename:
+        # 병렬 업로드를 위한 헬퍼 함수
+        def upload_single_file(file):
+            if not file or not file.filename:
+                return None
+            try:
+                # 파일 스트림 전송
                 file_info = drive_manager.upload_file(
                     file.stream, 
                     file.filename, 
@@ -305,17 +310,15 @@ def new_post():
                     file_id = file_info.get('id')
                     mime_type = file_info.get('mimeType', '')
                     
-                    # 미리보기용 링크 가공
                     thumbnail_link = file_info.get('thumbnailLink')
                     if thumbnail_link and mime_type.startswith('image/'):
-                        # 썸네일 해상도를 높이기 위해 =s220 등을 제거하고 =s1000으로 교체
                         thumbnail_link = thumbnail_link.split('=s')[0] + '=s1000'
                     
                     embed_link = None
                     if mime_type.startswith('video/'):
                         embed_link = f"https://drive.google.com/file/d/{file_id}/preview"
                     
-                    uploaded_files.append({
+                    return {
                         'id': file_id,
                         'name': file_info.get('name'),
                         'view_link': file_info.get('webViewLink'),
@@ -324,7 +327,17 @@ def new_post():
                         'embed_link': embed_link,
                         'mime_type': mime_type,
                         'size': file_info.get('size')
-                    })
+                    }
+            except Exception as e:
+                print(f"파일 업로드 실패 ({file.filename}): {e}")
+            return None
+
+        # ThreadPoolExecutor를 사용한 병렬 업로드 수행
+        uploaded_files = []
+        if files and any(f.filename for f in files):
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                results = list(executor.map(upload_single_file, files))
+                uploaded_files = [r for r in results if r is not None]
         
         if not content and not uploaded_files:
             flash('내용을 입력하거나 파일을 첨부해 주세요.', 'error')
