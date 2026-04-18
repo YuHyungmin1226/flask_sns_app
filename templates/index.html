@@ -47,6 +47,44 @@
 
 
 
+                <!-- 첨부 파일 (구글 드라이브) -->
+                {% if post.files %}
+                {% set files = post.files|from_json %}
+                <div class="attached-files mb-4">
+                    <div class="row g-3">
+                        {% for file in files %}
+                        <div class="col-12">
+                            <div class="card h-100 border-light shadow-sm overflow-hidden">
+                                {% if file.mime_type.startswith('image/') %}
+                                <div class="bg-light text-center">
+                                    {% set thumb_url = file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' %}
+                                    <a href="{{ url_for('view_post', post_id=post.id) }}">
+                                        <img src="{{ thumb_url }}" 
+                                             class="img-fluid" alt="{{ file.name }}" 
+                                             style="width: 100%; max-height: 500px; object-fit: contain;"
+                                             onerror="this.src='https://placehold.co/800x400?text=Image+Not+Found'; this.onerror=null;">
+                                    </a>
+                                </div>
+                                {% elif file.mime_type.startswith('video/') %}
+                                <div class="ratio ratio-16x9 bg-dark">
+                                    {% set embed_url = file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' %}
+                                    <iframe src="{{ embed_url }}" class="w-100 h-100" allow="autoplay" allowfullscreen></iframe>
+                                </div>
+                                {% else %}
+                                <div class="p-4 bg-light d-flex align-items-center justify-content-center">
+                                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="text-decoration-none text-center">
+                                        <i class="bi bi-file-earmark-arrow-down" style="font-size: 3rem; color: #6c757d;"></i>
+                                        <div class="small text-muted">{{ file.name }}</div>
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- URL 미리보기 -->
                 {% if post.url_previews %}
                 {% set url_previews = post.url_previews|from_json %}
