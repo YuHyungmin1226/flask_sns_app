@@ -126,3 +126,11 @@ celerybeat.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json 
+
+# 구글 클라우드 서비스 계정 키
+*.json
+!railway.env.example
+!.hintrc
+!package.json
+!composer.json
+!metadata.json

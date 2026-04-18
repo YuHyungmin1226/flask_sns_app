@@ -7,22 +7,23 @@ import os
 import sys
 import uuid
 import json
+from dotenv import load_dotenv
 from utils.url_utils import URLPreviewGenerator
-# from utils.file_utils import save_file, validate_file, get_file_info_from_json, delete_file, get_file_size_display # AWS 및 파일 업로드 제거로 미사용
+from utils.google_drive_utils import drive_manager
 
+# 환경 변수 로드
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key-change-in-production')
 
-# Railway 배포 대응 - 데이터베이스 설정
+# 데이터베이스 설정
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
-    # Railway PostgreSQL 사용
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
-    # 로컬 개발용 SQLite
     if getattr(sys, 'frozen', False):
         current_dir = os.path.dirname(sys.executable)
     else:
@@ -37,24 +38,17 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# URL 미리보기 생성기
 url_preview_generator = URLPreviewGenerator()
-
-# 한국 시간대 설정
 KST = timezone(timedelta(hours=9))
 
 def get_korean_time():
-    """한국 시간(KST) 반환 - 모든 시간 관련 작업에서 일관성 있게 사용"""
     return datetime.now(KST)
 
 def get_korean_time_for_db():
-    """데이터베이스 저장용 한국 시간 반환 (timezone 정보 제거)"""
     return datetime.now(KST).replace(tzinfo=None)
 
-# Jinja2 필터 추가
 @app.template_filter('from_json')
 def from_json_filter(value):
-    """JSON 문자열을 파이썬 객체로 변환하는 필터"""
     if isinstance(value, str):
         try:
             return json.loads(value)
@@ -64,17 +58,11 @@ def from_json_filter(value):
 
 @app.template_filter('korean_time')
 def korean_time_filter(dt):
-    """한국 시간으로 포맷팅하는 필터"""
     if dt is None:
         return ""
-    
-    # timezone 정보가 없으면 한국 시간으로 가정 (기존 데이터 호환성)
     if dt.tzinfo is None:
-        # 데이터베이스에 저장된 시간은 이미 한국 시간이므로 그대로 사용
-        # replace() 대신 직접 포맷팅하여 timezone 변환 없이 처리
         return dt.strftime('%Y-%m-%d %H:%M')
     else:
-        # 이미 timezone 정보가 있으면 한국 시간으로 변환
         korean_dt = dt.astimezone(KST)
         return korean_dt.strftime('%Y-%m-%d %H:%M')
 
@@ -87,8 +75,8 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime)
     login_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime)
-    password_changed = db.Column(db.Boolean, default=False)  # 비밀번호 변경 여부
-    is_approved = db.Column(db.Boolean, default=False)  # 관리자 승인 여부
+    password_changed = db.Column(db.Boolean, default=False)
+    is_approved = db.Column(db.Boolean, default=False)
     
     posts = db.relationship('Post', backref='author', lazy=True)
     comments = db.relationship('Comment', backref='author', lazy=True)
@@ -100,8 +88,8 @@ class Post(db.Model):
     created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
     updated_at = db.Column(db.DateTime, default=get_korean_time_for_db, onupdate=get_korean_time_for_db)
     is_public = db.Column(db.Boolean, default=True)
-    url_previews = db.Column(db.Text, default='[]')  # JSON 문자열로 저장
-    files = db.Column(db.Text, default='[]')  # JSON 문자열로 저장
+    url_previews = db.Column(db.Text, default='[]')
+    files = db.Column(db.Text, default='[]')
     
     comments = db.relationship('Comment', backref='post', lazy=True, cascade='all, delete-orphan')
 
@@ -116,7 +104,6 @@ class Comment(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# 보안 관련 함수들
 def is_account_locked(user):
     if user.locked_until and user.locked_until > get_korean_time_for_db():
         return True
@@ -132,74 +119,52 @@ def reset_login_attempts(user):
     user.locked_until = None
     db.session.commit()
 
-# Railway 슬립모드 방지용 핑 엔드포인트
 @app.route('/ping')
 def ping():
-    """Railway 슬립모드 방지용 핑 엔드포인트"""
     return jsonify({
         'status': 'alive',
         'timestamp': get_korean_time().isoformat(),
         'message': 'Flask SNS is running!'
     })
 
-# 데이터베이스 초기화 및 기본 관리자 계정 생성
 def init_db():
-    """데이터베이스 초기화 및 기본 관리자 계정 생성"""
     try:
         with app.app_context():
-            # 데이터베이스 테이블 생성
             db.create_all()
-
-            # DB 마이그레이션: existing users should be approved? 
-            # 아니면 기존 유저는 승인된 것으로 간주 (is_approved 컬럼 추가 시 default=False이지만, 
-            # SQLite에서는 기존 데이터에 컬럼 추가 시 default 값이 적용되지 않을 수 있음 -> 수동 처리 필요)
-            # 여기서는 간단히 모든 기존 유저를 승인 처리 (서비스 중단 방지)
             try:
-                # SQLite 컬럼 추가 확인을 위한 더미 쿼리 (Postgres 예약어 'user' 충돌 방지를 위해 따옴표 사용)
                 db.session.execute(db.text('SELECT is_approved FROM "user" LIMIT 1'))
             except Exception:
                 db.session.rollback()
-                # 컬럼이 없으면 추가 (SQLite는 ALTER TABLE ADD COLUMN 지원)
-                print("⚠️ User 테이블에 is_approved 컬럼이 없습니다. 추가합니다.")
+                print("User 테이블에 is_approved 컬럼 추가 중...")
                 try:
                     with db.engine.connect() as conn:
-                        # PostgreSQL/SQLite 호환성을 위해 TRUE 사용 및 테이블명 쿼팅
                         conn.execute(db.text('ALTER TABLE "user" ADD COLUMN is_approved BOOLEAN DEFAULT TRUE'))
                         conn.commit()
-                    print("✅ is_approved 컬럼이 추가되었습니다.")
+                    print("is_approved 컬럼이 추가되었습니다.")
                 except Exception as e:
-                    print(f"❌ 컬럼 추가 실패: {e}")
+                    print(f"컬럼 추가 실패: {e}")
             
-            # 기본 관리자 계정 생성
             admin_user = User.query.filter_by(username='admin').first()
             if not admin_user:
                 admin_user = User(
                     username='admin',
-                            password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123')),
-        password_changed=False
+                    password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123')),
+                    password_changed=False
                 )
                 db.session.add(admin_user)
                 db.session.commit()
-                print("✅ 기본 관리자 계정이 생성되었습니다. (admin/admin123)")
+                print("기본 관리자 계정이 생성되었습니다.")
             else:
-                # 기존 관리자 계정 승인 처리 (마이그레이션용)
                 if not admin_user.is_approved:
                     admin_user.is_approved = True
                     db.session.commit()
-                    print("✅ 관리자 계정이 승인되었습니다.")
-                print("ℹ️ 관리자 계정이 이미 존재합니다.")
-            
-
+                    print("관리자 계정이 승인되었습니다.")
 
     except Exception as e:
-        print(f"❌ 데이터베이스 초기화 오류: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"데이터베이스 초기화 오류: {e}")
 
-# 애플리케이션 시작 시 데이터베이스 초기화
 init_db()
 
-# 라우트
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -212,7 +177,6 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
         user = User.query.filter_by(username=username).first()
         
         if not user:
@@ -223,19 +187,16 @@ def login():
             flash('계정이 잠겼습니다. 잠시 후 다시 시도해주세요.', 'error')
             return render_template('login.html')
         
-        # 승인 대기 확인
         if not user.is_approved:
             flash('관리자 승인 대기 중인 계정입니다.', 'warning')
             return render_template('login.html')
 
-        
         if check_password_hash(user.password_hash, password):
             reset_login_attempts(user)
             user.last_login = get_korean_time_for_db()
             db.session.commit()
             login_user(user)
             
-            # 기본 비밀번호 사용 중인지 확인
             if not user.password_changed and password == os.environ.get('ADMIN_PASSWORD', 'admin123'):
                 flash('보안을 위해 비밀번호를 변경해주세요.', 'warning')
                 return redirect(url_for('change_password'))
@@ -276,7 +237,6 @@ def register():
         db.session.commit()
         
         flash('회원가입 요청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.', 'success')
-        # return redirect(url_for('login')) # 기존 코드
         return redirect(url_for('login'))
     
     return render_template('register.html')
@@ -289,22 +249,18 @@ def change_password():
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
         
-        # 현재 비밀번호 확인
         if not check_password_hash(current_user.password_hash, current_password):
             flash('현재 비밀번호가 올바르지 않습니다.', 'error')
             return render_template('change_password.html')
         
-        # 새 비밀번호 확인
         if new_password != confirm_password:
             flash('새 비밀번호가 일치하지 않습니다.', 'error')
             return render_template('change_password.html')
         
-        # 새 비밀번호 유효성 검사
         if len(new_password) < 6:
             flash('비밀번호는 최소 6자 이상이어야 합니다.', 'error')
             return render_template('change_password.html')
         
-        # 비밀번호 변경
         current_user.password_hash = generate_password_hash(new_password)
         current_user.password_changed = True
         db.session.commit()
@@ -328,32 +284,39 @@ def new_post():
         content = request.form.get('content')
         is_public = request.form.get('is_public') == 'on'
         
-        # URL 미리보기 생성
         urls = url_preview_generator.extract_urls(content)
-        print(f"추출된 URL들: {urls}")
         url_previews = []
         for url in urls:
-            print(f"URL 미리보기 처리 중: {url}")
             preview = url_preview_generator.get_url_preview(url)
             if preview:
-                print(f"미리보기 생성 성공: {preview}")
                 url_previews.append(preview)
-            else:
-                print(f"미리보기 생성 실패: {url}")
         
-        print(f"최종 URL 미리보기: {url_previews}")
+        uploaded_files = []
+        files = request.files.getlist('files')
         
-        # Railway 배포용 - 파일 업로드 임시 비활성화 (S3 제거로 기능 삭제)
-        # files = request.files.getlist('files')
-
+        for file in files:
+            if file and file.filename:
+                file_info = drive_manager.upload_file(
+                    file.stream, 
+                    file.filename, 
+                    file.content_type or 'application/octet-stream'
+                )
+                if file_info:
+                    uploaded_files.append({
+                        'id': file_info.get('id'),
+                        'name': file_info.get('name'),
+                        'view_link': file_info.get('webViewLink'),
+                        'download_link': file_info.get('webContentLink'),
+                        'mime_type': file_info.get('mimeType'),
+                        'size': file_info.get('size')
+                    })
         
         post = Post(
             content=content,
             author_id=current_user.id,
             is_public=is_public,
             url_previews=json.dumps(url_previews, ensure_ascii=False),
-            # files=json.dumps(uploaded_files, ensure_ascii=False)  # S3 제거로 파일 첨부 기능 삭제
-            files='[]'
+            files=json.dumps(uploaded_files, ensure_ascii=False)
         )
         db.session.add(post)
         db.session.commit()
@@ -371,8 +334,7 @@ def view_post(post_id):
         return redirect(url_for('index'))
     
     url_previews = json.loads(post.url_previews) if post.url_previews else []
-    # files = get_file_info_from_json(post.files) # AWS 제거로 사용 안함
-    files = []
+    files = json.loads(post.files) if post.files else []
     return render_template('view_post.html', post=post, url_previews=url_previews, files=files)
 
 @app.route('/post/<int:post_id>/comment', methods=['POST'])
@@ -404,14 +366,19 @@ def delete_post(post_id):
         flash('삭제 권한이 없습니다.', 'error')
         return redirect(url_for('index'))
     
-    # S3 제거로 파일 삭제 로직 제거됨
-    # S3 제거로 파일 삭제 로직 제거됨
-    
+    if post.files:
+        try:
+            files_to_delete = json.loads(post.files)
+            for file_info in files_to_delete:
+                file_id = file_info.get('id')
+                if file_id:
+                    drive_manager.delete_file(file_id)
+        except Exception as e:
+            print(f"파일 삭제 처리 중 오류: {e}")
+            
     db.session.delete(post)
     db.session.commit()
-    
     flash('게시글이 삭제되었습니다.', 'success')
-    
     return redirect(url_for('index'))
 
 @app.route('/profile')
@@ -420,7 +387,6 @@ def profile():
     user_posts = Post.query.filter_by(author_id=current_user.id).order_by(Post.created_at.desc()).all()
     return render_template('profile.html', user_posts=user_posts)
 
-# 관리자 기능
 @app.route('/admin')
 @login_required
 def admin():
@@ -430,10 +396,7 @@ def admin():
     
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
-    
-    # 승인 대기 중인 사용자 목록
     pending_users = User.query.filter_by(is_approved=False).all()
-    
     return render_template('admin.html', users=users, posts=posts, pending_users=pending_users)
 
 @app.route('/admin/user/<int:user_id>/approve', methods=['POST'])
@@ -446,7 +409,6 @@ def approve_user(user_id):
     user = User.query.get_or_404(user_id)
     user.is_approved = True
     db.session.commit()
-    
     flash(f'{user.username} 사용자가 승인되었습니다.', 'success')
     return redirect(url_for('admin'))
 
@@ -462,11 +424,9 @@ def reject_user(user_id):
         flash('관리자 계정은 거절할 수 없습니다.', 'error')
         return redirect(url_for('admin'))
     
-    # 거절 시 계정 삭제 (또는 별도 상태로 변경 가능하나 여기서는 삭제로 처리)
     db.session.delete(user)
     db.session.commit()
-    
-    flash(f'{user.username} 가입 요청이 거절(삭제)되었습니다.', 'warning')
+    flash(f'{user.username} 가입 요청이 거절되었습니다.', 'warning')
     return redirect(url_for('admin'))
 
 @app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
@@ -486,9 +446,6 @@ def delete_user(user_id):
     flash('사용자가 삭제되었습니다.', 'success')
     return redirect(url_for('admin'))
 
-# 파일 다운로드 및 삭제 라우트 제거됨 (S3 제거)
-
-# API 엔드포인트
 @app.route('/api/posts')
 def api_posts():
     posts = Post.query.filter_by(is_public=True).order_by(Post.created_at.desc()).all()
@@ -504,8 +461,6 @@ def api_posts():
     return jsonify(posts_data)
 
 if __name__ == '__main__':
-    # Railway 배포용 포트 설정
     port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 Flask SNS 앱을 포트 {port}에서 시작합니다...")
-    print(f"📊 데이터베이스: {app.config['SQLALCHEMY_DATABASE_URI']}")
-    app.run(debug=False, host='0.0.0.0', port=port) 
+    print(f"Flask SNS 앱 시작 (Port: {port})")
+    app.run(debug=False, host='0.0.0.0', port=port)

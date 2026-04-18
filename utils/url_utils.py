@@ -34,7 +34,7 @@ class URLPreviewGenerator:
     def extract_youtube_id(self, url: str) -> Optional[str]:
         """YouTube URL에서 동영상 ID 추출"""
         patterns = [
-            r'(?:v=|\/)([0-9A-Za-z_-]{11}).*',
+            r'(?:v=|\/)([0-9A-Za-z_-]{11}).*/',
             r'(?:embed\/)([0-9A-Za-z_-]{11})',
             r'(?:v\/)([0-9A-Za-z_-]{11})',
             r'(?:youtu\.be\/)([0-9A-Za-z_-]{11})'
@@ -85,7 +85,7 @@ class URLPreviewGenerator:
                     'thumbnail_url': thumbnail_url or f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg",
                     'width': data.get('width', 560),
                     'height': data.get('height', 315),
-                    'duration': None,  # oEmbed에서는 제공하지 않음
+                    'duration': None,
                     'view_count': None,
                     'site_name': 'YouTube'
                 }
@@ -210,4 +210,4 @@ class URLPreviewGenerator:
             if preview:
                 url_previews.append(preview)
         
-        return text, url_previews 
+        return text, url_previews

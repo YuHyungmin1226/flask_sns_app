@@ -12,7 +12,7 @@
                 </h4>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="content" class="form-label">내용</label>
                         <textarea class="form-control" id="content" name="content" rows="6" 
@@ -23,9 +23,15 @@
                         </div>
                     </div>
                     
-
-                    
-
+                    <div class="mb-3">
+                        <label for="files" class="form-label">
+                            <i class="bi bi-paperclip"></i> 파일 첨부 (구글 드라이브)
+                        </label>
+                        <input type="file" class="form-control" id="files" name="files" multiple>
+                        <div class="form-text">
+                            이미지, 영상, 문서 등을 선택하세요. 업로드된 파일은 구글 드라이브에 안전하게 보관됩니다.
+                        </div>
+                    </div>
                     
                     <div class="mb-3">
                         <div class="form-check">
@@ -76,8 +82,6 @@ document.getElementById('content').addEventListener('input', function() {
     }
 });
 
-
-
 // URL 미리보기 미리보기 (선택사항)
 document.getElementById('content').addEventListener('blur', function() {
     const content = this.value;
@@ -97,4 +101,4 @@ document.getElementById('content').addEventListener('blur', function() {
     }
 });
 </script>
-{% endblock %} 
+{% endblock %}
