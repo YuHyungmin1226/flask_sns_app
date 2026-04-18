@@ -83,7 +83,7 @@ class User(UserMixin, db.Model):
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
+    content = db.Column(db.Text, nullable=True)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
     updated_at = db.Column(db.DateTime, default=get_korean_time_for_db, onupdate=get_korean_time_for_db)
@@ -325,6 +325,10 @@ def new_post():
                         'mime_type': mime_type,
                         'size': file_info.get('size')
                     })
+        
+        if not content and not uploaded_files:
+            flash('내용을 입력하거나 파일을 첨부해 주세요.', 'error')
+            return render_template('new_post.html')
         
         post = Post(
             content=content,
