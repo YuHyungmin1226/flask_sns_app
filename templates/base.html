@@ -128,10 +128,72 @@
         }
 
         .youtube-preview .youtube-info {
-            background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 100%);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 100%);
             padding: 2.5rem 1.25rem 1.25rem;
+            color: white;
+            pointer-events: none;
+        }
+        
+        .youtube-preview .youtube-info h6, .youtube-preview .youtube-info small {
+            color: white;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
 
+        .youtube-preview .play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 68px;
+            height: 48px;
+            background-color: rgba(33, 33, 33, 0.82);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 2;
+        }
+
+        .youtube-preview .play-button:hover {
+            background-color: #ff0000;
+            color: white;
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        .youtube-preview .youtube-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 2;
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .youtube-preview:hover .youtube-actions {
+            opacity: 1;
+        }
+        
+        .youtube-preview .youtube-actions .btn {
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            backdrop-filter: blur(4px);
+        }
+        
+        .youtube-preview .youtube-actions .btn:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
         /* 프로그레스 바 스타일 개선 */
         .progress {
             height: 8px;
