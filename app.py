@@ -14,6 +14,7 @@ import uuid
 import json
 import io
 import zipfile
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from utils.url_utils import URLPreviewGenerator
 from utils.google_drive_utils import drive_manager
