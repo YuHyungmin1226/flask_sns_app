@@ -35,6 +35,7 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # 전체 용량 300MB 제한
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -296,6 +297,11 @@ def new_post():
         
         uploaded_files = []
         files = request.files.getlist('files')
+        
+        # 파일 개수 제한 (최대 30개)
+        if len(files) > 30:
+            flash('파일은 한 번에 최대 30개까지만 첨부할 수 있습니다.', 'error')
+            return render_template('new_post.html')
         
         # 병렬 업로드를 위한 헬퍼 함수
         def upload_single_file(file):
