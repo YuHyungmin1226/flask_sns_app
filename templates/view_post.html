@@ -3,19 +3,20 @@
 {% block title %}{{ post.author.username }}의 게시글 - 개인 SNS{% endblock %}
 
 {% block content %}
-    <div class="col-lg-10 mx-auto">
-        <!-- 게시글 -->
-        <div class="card mb-5 border-0 shadow-sm overflow-hidden">
-            <div class="p-4 p-md-5">
-                <div class="d-flex justify-content-between align-items-center mb-4 pb-4 border-bottom border-light">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 56px; height: 56px; font-weight: 700; font-size: 1.4rem;">
-                            {{ post.author.username[0]|upper }}
-                        </div>
-                        <div>
-                            <h5 class="mb-0 fw-bold">{{ post.author.username }}</h5>
-                            <small class="text-muted">{{ post.created_at|korean_time }}</small>
-                        </div>
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- 게시글 -->
+            <div class="card mb-5 border-0 shadow-sm overflow-hidden">
+                <div class="p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.2rem;">
+                                {{ post.author.username[0]|upper }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ post.author.username }}</h6>
+                                <small class="text-muted">{{ post.created_at|korean_time }}</small>
+                            </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         {% if not post.is_public %}
@@ -152,6 +153,7 @@
             <a href="{{ url_for('index') }}" class="btn btn-link text-muted text-decoration-none">
                 <i class="bi bi-arrow-left me-1"></i> 소식 목록으로 돌아가기
             </a>
+        </div>
         </div>
     </div>
 </div>
