@@ -9,7 +9,9 @@
             <div class="p-4 p-md-5">
                 <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom border-light">
                     <h3 class="fw-bold mb-0 text-main" style="letter-spacing: -0.03em;">관리자 제어 센터</h3>
-                    <div class="text-muted small">실시간 시스템 요약</div>
+                    <a href="{{ url_for('export_markdown') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm" title="모든 게시물을 마크다운 ZIP으로 내보내기">
+                        <i class="bi bi-download me-1"></i> 전체 데이터 백업
+                    </a>
                 </div>
 
                 <!-- 시스템 자동화 제어 섹션 -->
