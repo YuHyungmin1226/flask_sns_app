@@ -300,9 +300,13 @@ def new_post():
             if not file or not file.filename:
                 return None
             try:
-                # 파일 스트림 전송
+                # 파일 내용을 메모리에 읽어서 독립적인 스트림 생성 (쓰레드 안전성 확보)
+                file_content = file.read()
+                temp_stream = io.BytesIO(file_content)
+                
+                # 파일 업로드 (쓰레드별 로컬 드라이브 서비스 사용)
                 file_info = drive_manager.upload_file(
-                    file.stream, 
+                    temp_stream, 
                     file.filename, 
                     file.content_type or 'application/octet-stream'
                 )

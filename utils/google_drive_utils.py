@@ -1,6 +1,7 @@
 import os
 import json
 import io
+import threading
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
@@ -15,7 +16,16 @@ class GoogleDriveManager:
         self.client_id = os.environ.get('GOOGLE_CLIENT_ID')
         self.client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
         self.refresh_token = os.environ.get('GOOGLE_REFRESH_TOKEN')
-        self.service = self._authenticate()
+        
+        # 쓰레드별 서비스 인스턴스 관리를 위한 로컬 변수
+        self._local = threading.local()
+
+    @property
+    def service(self):
+        """쓰레드별로 독립적인 구글 드라이브 서비스 인스턴스를 반환"""
+        if not hasattr(self._local, 'instance'):
+            self._local.instance = self._authenticate()
+        return self._local.instance
 
     def _authenticate(self):
         """OAuth2 Refresh Token을 사용하여 사용자 계정 인증 수행"""
