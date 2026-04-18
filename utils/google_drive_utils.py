@@ -5,7 +5,7 @@ import threading
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 from dotenv import load_dotenv
 
 class GoogleDriveManager:
@@ -60,6 +60,19 @@ class GoogleDriveManager:
             print(f"구글 드라이브 인증 오류: {e}")
             return None
 
+    def find_file_id(self, filename):
+        """이름으로 파일 ID 찾기"""
+        if not self.service:
+            return None
+        try:
+            query = f"name = '{filename}' and '{self.folder_id}' in parents and trashed = false"
+            results = self.service.files().list(q=query, fields="files(id, name)").execute()
+            files = results.get('files', [])
+            return files[0].get('id') if files else None
+        except Exception as e:
+            print(f"파일 검색 오류 ({filename}): {e}")
+            return None
+
     def upload_file(self, file_stream, filename, mimetype):
         """파일을 구글 드라이브의 지정된 폴더에 업로드하고 정보 반환"""
         if not self.service:
@@ -100,6 +113,63 @@ class GoogleDriveManager:
         except Exception as e:
             print(f"파일 업로드 오류: {e}")
             return None
+
+    def sync_database(self, local_db_path, filename='sns.db'):
+        """로컬 DB 파일을 드라이브로 동기화 (업데이트 또는 생성)"""
+        if not self.service:
+            return None
+        
+        try:
+            file_id = self.find_file_id(filename)
+            media = MediaIoBaseUpload(local_db_path, mimetype='application/x-sqlite3', resumable=True)
+            
+            if file_id:
+                # 파일 업데이트
+                updated_file = self.service.files().update(
+                    fileId=file_id,
+                    media_body=media
+                ).execute()
+                print(f"[Sync] DB 업데이트 완료 (ID: {file_id})")
+                return updated_file.get('id')
+            else:
+                # 파일 신규 생성
+                file_metadata = {
+                    'name': filename,
+                    'parents': [self.folder_id]
+                }
+                new_file = self.service.files().create(
+                    body=file_metadata,
+                    media_body=media,
+                    fields='id'
+                ).execute()
+                print(f"[Sync] 새 DB 파일 생성 및 업로드 완료 (ID: {new_file.get('id')})")
+                return new_file.get('id')
+        except Exception as e:
+            print(f"DB 동기화 오류: {e}")
+            return None
+
+    def download_database(self, local_db_path, filename='sns.db'):
+        """드라이브에서 DB 파일을 다운로드하여 로컬에 저장"""
+        if not self.service:
+            return False
+            
+        try:
+            file_id = self.find_file_id(filename)
+            if not file_id:
+                print(f"[Restore] 드라이브에 {filename} 파일이 없습니다.")
+                return False
+                
+            request = self.service.files().get_media(fileId=file_id)
+            with io.FileIO(local_db_path, 'wb') as f:
+                downloader = MediaIoBaseDownload(f, request)
+                done = False
+                while done is False:
+                    status, done = downloader.next_chunk()
+            print(f"[Restore] 드라이브로부터 DB 다운로드 및 복구 완료.")
+            return True
+        except Exception as e:
+            print(f"DB 다운로드 오류: {e}")
+            return False
 
     def delete_file(self, file_id):
         """파일 ID를 이용해 구글 드라이브에서 파일 삭제"""

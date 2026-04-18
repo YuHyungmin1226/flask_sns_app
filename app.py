@@ -39,6 +39,22 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # 전체 용량 300MB 제한
 
 db = SQLAlchemy(app)
+
+# --- 구글 드라이브 DB 동기화 초기화 (Restore) ---
+def restore_db_from_drive():
+    try:
+        if not DATABASE_URL: # SQLite 환경에서만 작동
+            success = drive_manager.download_database(db_path)
+            if success:
+                print(f"[Restore] 구글 드라이브로부터 최신 DB를 복구했습니다.")
+            else:
+                print(f"[Restore] 드라이브에 DB가 없거나 복구에 실패했습니다. 로컬 DB를 사용합니다.")
+    except Exception as e:
+        print(f"[Restore Error] DB 복구 중 에러 발생: {e}")
+
+# 앱 구동 시 즉시 복구 시도
+restore_db_from_drive()
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -246,6 +262,7 @@ def register():
         )
         db.session.add(user)
         db.session.commit()
+        trigger_db_sync()
         
         flash('회원가입 요청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.', 'success')
         return redirect(url_for('login'))
@@ -275,6 +292,7 @@ def change_password():
         current_user.password_hash = generate_password_hash(new_password)
         current_user.password_changed = True
         db.session.commit()
+        trigger_db_sync()
         
         flash('비밀번호가 성공적으로 변경되었습니다!', 'success')
         return redirect(url_for('index'))
@@ -372,6 +390,7 @@ def new_post():
         )
         db.session.add(post)
         db.session.commit()
+        trigger_db_sync()
         
         flash('게시글이 작성되었습니다!', 'success')
         
@@ -414,6 +433,7 @@ def add_comment(post_id):
     )
     db.session.add(comment)
     db.session.commit()
+    trigger_db_sync()
     
     flash('댓글이 작성되었습니다!', 'success')
     return redirect(url_for('view_post', post_id=post_id))
@@ -438,6 +458,7 @@ def delete_post(post_id):
             
     db.session.delete(post)
     db.session.commit()
+    trigger_db_sync()
     flash('게시글이 삭제되었습니다.', 'success')
     return redirect(url_for('index'))
 
@@ -476,6 +497,7 @@ def approve_user(user_id):
     user = User.query.get_or_404(user_id)
     user.is_approved = True
     db.session.commit()
+    trigger_db_sync()
     flash(f'{user.username} 사용자가 승인되었습니다.', 'success')
     return redirect(url_for('admin'))
 
@@ -493,6 +515,7 @@ def reject_user(user_id):
     
     db.session.delete(user)
     db.session.commit()
+    trigger_db_sync()
     flash(f'{user.username} 가입 요청이 거절되었습니다.', 'warning')
     return redirect(url_for('admin'))
 
@@ -510,6 +533,7 @@ def delete_user(user_id):
     
     db.session.delete(user)
     db.session.commit()
+    trigger_db_sync()
     flash('사용자가 삭제되었습니다.', 'success')
     return redirect(url_for('admin'))
 
@@ -600,6 +624,7 @@ def toggle_news_bot():
         setting.value = 'False' if setting.value == 'True' else 'True'
         
     db.session.commit()
+    trigger_db_sync()
     return jsonify({
         'success': True, 
         'enabled': setting.value == 'True',
@@ -620,6 +645,7 @@ def toggle_weather_bot():
         setting.value = 'False' if setting.value == 'True' else 'True'
         
     db.session.commit()
+    trigger_db_sync()
     return jsonify({
         'success': True, 
         'enabled': setting.value == 'True',
@@ -643,10 +669,26 @@ def scheduled_weather_task():
     except Exception as e:
         print(f"[WeatherBot Error] 스케줄링 실행 중 에러가 발생했습니다: {e}")
 
+def scheduled_db_sync_task():
+    """10분 주기로 DB를 구글 드라이브에 동기화"""
+    try:
+        if not DATABASE_URL:
+            # SQLite 파일 락(Lock) 문제를 방지하기 위해 별도의 백업 기능을 사용할 수도 있으나,
+            # 현재 규모에서는 직접 업로드를 시도합니다.
+            drive_manager.sync_database(db_path)
+    except Exception as e:
+        print(f"[Sync Error] 주기적 DB 백업 중 에러 발생: {e}")
+
+def trigger_db_sync():
+    """데이터 변경 시 즉시 비동기로 DB 동기화를 실행함"""
+    if not DATABASE_URL:
+        threading.Thread(target=scheduled_db_sync_task).start()
+
 # 스케줄러 인스턴스 생성 및 스케줄 등록
 scheduler = BackgroundScheduler(timezone='Asia/Seoul')
 scheduler.add_job(func=scheduled_news_task, trigger='cron', hour='6,12,18', minute=0)
 scheduler.add_job(func=scheduled_weather_task, trigger='cron', hour=6, minute=0)
+scheduler.add_job(func=scheduled_db_sync_task, trigger='interval', minutes=10)
 scheduler.start()
 
 if __name__ == '__main__':
