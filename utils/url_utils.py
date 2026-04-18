@@ -34,7 +34,7 @@ class URLPreviewGenerator:
     def extract_youtube_id(self, url: str) -> Optional[str]:
         """YouTube URL에서 동영상 ID 추출"""
         patterns = [
-            r'(?:v=|\/)([0-9A-Za-z_-]{11}).*/',
+            r'(?:v=|\/)([0-9A-Za-z_-]{11})(?:[?&/]|$)',
             r'(?:embed\/)([0-9A-Za-z_-]{11})',
             r'(?:v\/)([0-9A-Za-z_-]{11})',
             r'(?:youtu\.be\/)([0-9A-Za-z_-]{11})'
