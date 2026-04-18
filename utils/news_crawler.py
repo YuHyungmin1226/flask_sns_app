@@ -50,12 +50,14 @@ def fetch_and_post_news(app, db, Post, SystemSetting, User):
             print("[News_Bot] 새로운 기사가 없습니다. 포스팅을 건너뜁니다 (Skip).")
             return
             
-        # 5. 본문 내용 작성 (마크다운 불릿 기반 미니멀 텍스트 링크)
-        content = "📰 **Google News 최신 큐레이션**\n\n"
+        # 5. 본문 내용 작성 (마크다운 제거 - 평문 및 URL 직접 노출)
+        content = f"📰 [Google News 최신 큐레이션 - {len(new_articles)}건]\n\n"
         for article in new_articles:
-            title = getattr(article, 'title', '제목 없음').replace('[', '(').replace(']', ')')
+            title = getattr(article, 'title', '제목 없음')
             link = getattr(article, 'link', '#')
-            content += f"- [{title}]({link})\n"
+            content += f"• {title}\n  주소: {link}\n\n"
+        
+        content += "전체 뉴스는 Google News에서 확인하실 수 있습니다."
             
         # 6. 관리자 계정 조회
         admin = User.query.filter_by(username='admin').first()
