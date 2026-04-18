@@ -118,14 +118,8 @@ def create_app():
 
 def setup_scheduler(app):
     from apscheduler.schedulers.background import BackgroundScheduler
-    import utils.news_crawler as news_crawler
     import utils.weather_bot as weather_bot
     from utils.tasks import scheduled_db_sync_task
-
-    def scheduled_news_task():
-        with app.app_context():
-            try: news_crawler.fetch_and_post_news(app, db, Post, SystemSetting, User)
-            except Exception as e: print(f"News Error: {e}")
 
     def scheduled_weather_task():
         with app.app_context():
@@ -137,7 +131,6 @@ def setup_scheduler(app):
             scheduled_db_sync_task()
 
     scheduler = BackgroundScheduler(timezone='Asia/Seoul')
-    scheduler.add_job(func=scheduled_news_task, trigger='cron', hour='6,12,18', minute=0)
     scheduler.add_job(func=scheduled_weather_task, trigger='cron', hour=6, minute=0)
     scheduler.add_job(func=sync_task, trigger='interval', minutes=10)
     scheduler.start()
