@@ -19,10 +19,9 @@ def admin_dashboard():
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
     pending_users = User.query.filter_by(is_approved=False).all()
-    news_bot_enabled = SystemSetting.query.get('news_bot_enabled').value == 'True' if SystemSetting.query.get('news_bot_enabled') else False
     weather_bot_enabled = SystemSetting.query.get('weather_bot_enabled').value == 'True' if SystemSetting.query.get('weather_bot_enabled') else False
     
-    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, news_bot_enabled=news_bot_enabled, weather_bot_enabled=weather_bot_enabled)
+    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, weather_bot_enabled=weather_bot_enabled)
 
 @admin_bp.route('/admin/user/<int:user_id>/approve', methods=['POST'])
 @login_required
@@ -81,16 +80,6 @@ def export_markdown():
     zip_buffer.seek(0)
     return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name=f"export_{datetime.now().strftime('%Y%m%d')}.zip")
 
-@admin_bp.route('/admin/news-bot/toggle', methods=['POST'])
-@login_required
-def toggle_news_bot():
-    if current_user.username != 'admin': return jsonify({'success': False}), 403
-    setting = SystemSetting.query.get('news_bot_enabled') or SystemSetting(key='news_bot_enabled', value='True')
-    if not setting.value: db.session.add(setting)
-    setting.value = 'False' if setting.value == 'True' else 'True'
-    db.session.commit()
-    trigger_db_sync()
-    return jsonify({'success': True, 'enabled': setting.value == 'True'})
 
 @admin_bp.route('/admin/weather-bot/toggle', methods=['POST'])
 @login_required
