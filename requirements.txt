@@ -11,7 +11,6 @@ beautifulsoup4==4.12.2
 python-dotenv==1.0.0
 Pillow==11.3.0
 filetype==1.2.0
-python-magic==0.4.27
 waitress==3.0.2
 Jinja2==3.1.6
 SQLAlchemy==2.0.41

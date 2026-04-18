@@ -74,8 +74,8 @@ def new_post():
             flash('파일은 한 번에 최대 30개까지만 첨부할 수 있습니다.', 'error')
             return render_template('new_post.html')
         
-        # magic은 외부에서 주입하거나 여기서 임포트
-        import magic
+        # filetype은 시스템 라이브러리 의존성이 없어 컨테이너 환경에서 더 안전합니다.
+        import filetype
 
         def upload_single_file(file):
             if not file or not file.filename:
@@ -84,8 +84,10 @@ def new_post():
                 file.seek(0)
                 file_content = file.read()
                 
-                # MIME 타입 검증 (내용 기반)
-                mime = magic.from_buffer(file_content, mime=True)
+                # MIME 타입 검증 (파일 헤더 기반)
+                kind = filetype.guess(file_content)
+                mime = kind.mime if kind else 'application/octet-stream'
+                
                 allowed_prefixes = ['image/', 'video/', 'application/pdf', 'audio/']
                 allowed_exact = ['application/zip', 'application/x-zip-compressed', 'text/plain']
                 
