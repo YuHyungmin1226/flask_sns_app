@@ -48,20 +48,15 @@
                             <div class="card h-100 border-light shadow-sm">
                                 {% if file.mime_type.startswith('image/') %}
                                 <div class="ratio ratio-1x1 bg-light">
-                                    <img src="{{ file.thumbnail_link if file.thumbnail_link else file.view_link }}" 
+                                    {% set thumb_url = file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' %}
+                                    <img src="{{ thumb_url }}" 
                                          class="card-img-top object-fit-cover" alt="{{ file.name }}" 
                                          onerror="this.src='https://placehold.co/400x400?text=Image+Not+Found'; this.onerror=null;">
                                 </div>
                                 {% elif file.mime_type.startswith('video/') %}
                                 <div class="ratio ratio-16x9 bg-dark">
-                                    {% if file.embed_link %}
-                                    <iframe src="{{ file.embed_link }}" class="w-100 h-100" allow="autoplay" allowfullscreen></iframe>
-                                    {% else %}
-                                    <video class="w-100 h-100" controls>
-                                        <source src="{{ file.download_link }}" type="{{ file.mime_type }}">
-                                        브라우저가 비디오 태그를 지원하지 않습니다.
-                                    </video>
-                                    {% endif %}
+                                    {% set embed_url = file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' %}
+                                    <iframe src="{{ embed_url }}" class="w-100 h-100" allow="autoplay" allowfullscreen></iframe>
                                 </div>
                                 {% else %}
                                 <div class="ratio ratio-1x1 bg-light d-flex align-items-center justify-content-center">
