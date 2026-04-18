@@ -84,9 +84,9 @@
                     </h6>
                     {% for preview in url_previews %}
                         {% if preview.type == 'youtube' %}
-                        <div class="youtube-preview mb-4 shadow-sm">
-                            <div class="position-relative">
-                                <img src="{{ preview.thumbnail_url }}" class="w-100" alt="{{ preview.title }}">
+                        <div class="youtube-preview mb-4 border rounded overflow-hidden shadow-sm">
+                            <div class="youtube-preview-container ratio ratio-16x9">
+                                <img src="{{ preview.thumbnail_url }}" class="img-fluid w-100 h-100 object-fit-cover" alt="{{ preview.title }}">
                                 <button class="play-button" onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')" title="재생">
                                     <i class="bi bi-play-fill"></i>
                                 </button>
@@ -97,15 +97,18 @@
                             </div>
                         </div>
                         {% else %}
-                        <div class="url-preview mb-4 d-flex flex-column flex-md-row shadow-sm border-0">
+                        <div class="url-preview mb-4 border rounded overflow-hidden shadow-sm">
                             {% if preview.image_url %}
-                            <div style="flex: 0 0 240px; max-height: 180px;">
-                                <img src="{{ preview.image_url }}" class="w-100 h-100 object-fit-cover" alt="{{ preview.title }}">
+                            <div class="url-preview-image-container bg-light bg-opacity-50">
+                                <img src="{{ preview.image_url }}" class="img-fluid w-100 object-fit-cover" style="max-height: 250px;" alt="{{ preview.title }}">
                             </div>
                             {% endif %}
-                            <div class="p-3 p-md-4 d-flex flex-column justify-content-center">
-                                <h6 class="mb-2 fw-bold"><a href="{{ preview.url }}" target="_blank" class="text-decoration-none text-main">{{ preview.title }}</a></h6>
-                                <p class="text-muted small mb-0 text-truncate-2">{{ preview.description }}</p>
+                            <div class="p-3">
+                                <h6 class="mb-1 fw-bold"><a href="{{ preview.url }}" target="_blank" class="text-decoration-none text-main">{{ preview.title }}</a></h6>
+                                {% if preview.description %}
+                                <p class="text-muted small mb-2 text-truncate-2">{{ preview.description }}</p>
+                                {% endif %}
+                                <small class="text-muted"><i class="bi bi-globe"></i> {{ preview.site_name }}</small>
                             </div>
                         </div>
                         {% endif %}

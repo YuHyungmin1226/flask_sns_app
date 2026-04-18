@@ -90,9 +90,9 @@
                 <div class="url-previews-container">
                     {% for preview in url_previews %}
                     {% if preview.type == 'youtube' %}
-                    <div class="youtube-preview mb-4">
-                        <div class="youtube-preview-container">
-                            <img src="{{ preview.thumbnail_url }}" alt="{{ preview.title }}">
+                    <div class="youtube-preview mb-4 border rounded overflow-hidden shadow-sm">
+                        <div class="youtube-preview-container ratio ratio-16x9">
+                            <img src="{{ preview.thumbnail_url }}" class="img-fluid w-100 h-100 object-fit-cover" alt="{{ preview.title }}">
                             <button class="play-button"
                                 onclick="playYouTubeVideo('{{ preview.url }}', '{{ preview.title }}')"
                                 title="유튜브 비디오 재생">
@@ -114,11 +114,10 @@
                         </div>
                     </div>
                     {% else %}
-                    <div class="url-preview mb-4">
+                    <div class="url-preview mb-4 border rounded overflow-hidden shadow-sm">
                         {% if preview.image_url %}
-                        <div class="url-preview-image-container">
-                            <img src="{{ preview.image_url }}" class="url-preview-image"
-                                alt="{{ preview.title }}">
+                        <div class="url-preview-image-container bg-light bg-opacity-50">
+                            <img src="{{ preview.image_url }}" class="img-fluid w-100 object-fit-cover" style="max-height: 250px;" alt="{{ preview.title }}">
                         </div>
                         {% endif %}
                         <div class="p-3">
