@@ -52,9 +52,17 @@
         .url-preview {
             border: 1px solid var(--bs-border-color);
             border-radius: 8px;
-            padding: 15px;
+            overflow: hidden; /* 이미지가 라운드 코너를 벗어나지 않도록 */
             background-color: var(--bs-card-bg);
             width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .url-preview-image {
+            width: 100%;
+            border-radius: 0; /* 카드 상단에 밀착 */
+            object-fit: cover;
+            max-height: 400px;
         }
 
         .youtube-preview {
@@ -63,7 +71,7 @@
             max-width: 100%;
             border: 1px solid var(--bs-border-color);
             border-radius: 8px;
-            padding: 15px;
+            overflow: hidden;
             background-color: var(--bs-card-bg);
         }
 

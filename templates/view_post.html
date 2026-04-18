@@ -44,14 +44,15 @@
                     </h6>
                     <div class="row g-3">
                         {% for file in files %}
-                        <div class="col-md-6 col-lg-4">
+                        <div class="col-12">
                             <div class="card h-100 border-light shadow-sm">
                                 {% if file.mime_type.startswith('image/') %}
-                                <div class="ratio ratio-1x1 bg-light">
+                                <div class="bg-light text-center">
                                     {% set thumb_url = file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' %}
                                     <img src="{{ thumb_url }}" 
-                                         class="card-img-top object-fit-cover" alt="{{ file.name }}" 
-                                         onerror="this.src='https://placehold.co/400x400?text=Image+Not+Found'; this.onerror=null;">
+                                         class="img-fluid rounded-top" alt="{{ file.name }}" 
+                                         style="width: 100%; max-height: 600px; object-fit: contain;"
+                                         onerror="this.src='https://placehold.co/800x400?text=Image+Not+Found'; this.onerror=null;">
                                 </div>
                                 {% elif file.mime_type.startswith('video/') %}
                                 <div class="ratio ratio-16x9 bg-dark">
@@ -59,7 +60,7 @@
                                     <iframe src="{{ embed_url }}" class="w-100 h-100" allow="autoplay" allowfullscreen></iframe>
                                 </div>
                                 {% else %}
-                                <div class="ratio ratio-1x1 bg-light d-flex align-items-center justify-content-center">
+                                <div class="p-4 bg-light d-flex align-items-center justify-content-center">
                                     <i class="bi bi-file-earmark-arrow-down" style="font-size: 3rem; color: #6c757d;"></i>
                                 </div>
                                 {% endif %}
@@ -89,7 +90,7 @@
                     </h6>
                     {% for preview in url_previews %}
                         {% if preview.type == 'youtube' %}
-                        <div class="youtube-preview mb-3">
+                        <div class="youtube-preview mb-4">
                             <div class="youtube-preview-container">
                                 <img src="{{ preview.thumbnail_url }}" alt="{{ preview.title }}">
                                 <button class="play-button"
@@ -113,19 +114,19 @@
                             </div>
                         </div>
                         {% else %}
-                        <div class="url-preview mb-3 p-3 border rounded">
+                        <div class="url-preview mb-4">
                             {% if preview.image_url %}
-                            <div class="mb-3">
-                                <img src="{{ preview.image_url }}" class="img-fluid rounded url-preview-image"
+                            <div class="url-preview-image-container">
+                                <img src="{{ preview.image_url }}" class="url-preview-image"
                                     alt="{{ preview.title }}">
                             </div>
                             {% endif %}
-                            <div>
-                                <h6><a href="{{ preview.url }}" target="_blank">{{ preview.title }}</a></h6>
+                            <div class="p-3">
+                                <h6 class="mb-1"><a href="{{ preview.url }}" target="_blank" class="text-decoration-none">{{ preview.title }}</a></h6>
                                 {% if preview.description %}
-                                <p class="text-muted small">{{ preview.description }}</p>
+                                <p class="text-muted small mb-2">{{ preview.description }}</p>
                                 {% endif %}
-                                <small class="text-muted">{{ preview.site_name }}</small>
+                                <small class="text-muted"><i class="bi bi-globe"></i> {{ preview.site_name }}</small>
                             </div>
                         </div>
                         {% endif %}
