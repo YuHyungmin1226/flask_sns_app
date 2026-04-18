@@ -1,3 +1,8 @@
+from dotenv import load_dotenv
+
+# 환경 변수 로드 (임포트보다 먼저 실행되어야 함)
+load_dotenv()
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -7,13 +12,10 @@ import os
 import sys
 import uuid
 import json
+import io
 from concurrent.futures import ThreadPoolExecutor
-from dotenv import load_dotenv
 from utils.url_utils import URLPreviewGenerator
 from utils.google_drive_utils import drive_manager
-
-# 환경 변수 로드
-load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key-change-in-production')
@@ -301,6 +303,7 @@ def new_post():
                 return None
             try:
                 # 파일 내용을 메모리에 읽어서 독립적인 스트림 생성 (쓰레드 안전성 확보)
+                file.seek(0)
                 file_content = file.read()
                 temp_stream = io.BytesIO(file_content)
                 

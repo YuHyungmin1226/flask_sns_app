@@ -6,40 +6,48 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
+from dotenv import load_dotenv
 
 class GoogleDriveManager:
     def __init__(self):
-        # 구글 드라이브 폴더 ID는 공개되어도 안전하므로 기본값으로 유지
-        self.folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '1O50x9kbr5BliCayYTzKVLJ6NsH1uTFk7')
-        
-        # 민감한 정보는 환경 변수에서만 가져오며 기본값을 제공하지 않음
-        self.client_id = os.environ.get('GOOGLE_CLIENT_ID')
-        self.client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
-        self.refresh_token = os.environ.get('GOOGLE_REFRESH_TOKEN')
+        # 환경 변수를 생성자에서 고정하지 않고 실시간으로 읽어오도록 변경 (지연 로딩)
+        # 구글 드라이브 폴더 ID는 공개되어도 안전하므로 기본값 유지
+        self.default_folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '1O50x9kbr5BliCayYTzKVLJ6NsH1uTFk7')
         
         # 쓰레드별 서비스 인스턴스 관리를 위한 로컬 변수
         self._local = threading.local()
 
     @property
+    def folder_id(self):
+        """실시간으로 환경 변수에서 폴더 ID 획득"""
+        return os.environ.get('GOOGLE_DRIVE_FOLDER_ID', self.default_folder_id)
+
+    @property
     def service(self):
         """쓰레드별로 독립적인 구글 드라이브 서비스 인스턴스를 반환"""
-        if not hasattr(self._local, 'instance'):
+        if not hasattr(self._local, 'instance') or self._local.instance is None:
             self._local.instance = self._authenticate()
         return self._local.instance
 
     def _authenticate(self):
-        """OAuth2 Refresh Token을 사용하여 사용자 계정 인증 수행"""
-        if not all([self.client_id, self.client_secret, self.refresh_token]):
+        """OAuth2 Refresh Token을 사용하여 사용자 계정 인증 수행 (실시간 환경 변수 로드)"""
+        # 매번 환경 변수를 새로 확인하여 load_dotenv() 이후의 값을 반영함
+        load_dotenv()
+        client_id = os.environ.get('GOOGLE_CLIENT_ID')
+        client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+        refresh_token = os.environ.get('GOOGLE_REFRESH_TOKEN')
+
+        if not all([client_id, client_secret, refresh_token]):
             print("오류: 구글 드라이브 인증에 필요한 환경 변수가 설정되지 않았습니다.")
             return None
 
         try:
             creds = Credentials(
                 None,
-                refresh_token=self.refresh_token,
+                refresh_token=refresh_token,
                 token_uri="https://oauth2.googleapis.com/token",
-                client_id=self.client_id,
-                client_secret=self.client_secret,
+                client_id=client_id,
+                client_secret=client_secret,
                 scopes=['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
             )
             
