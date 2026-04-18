@@ -15,75 +15,65 @@
         <!-- 게시글 목록 -->
         {% if posts %}
         {% for post in posts %}
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0">
-                        <i class="bi bi-person-circle"></i> {{ post.author.username }}
-                    </h6>
-                    <small class="text-muted">
-                        <i class="bi bi-clock"></i> {{ post.created_at|korean_time }}
-                    </small>
-                </div>
-                <div>
-                    {% if not post.is_public %}
-                    <span class="badge bg-warning">
-                        <i class="bi bi-lock"></i> 비공개
-                    </span>
-                    {% endif %}
-                    {% if current_user.id == post.author_id %}
-                    <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" class="inline-form"
-                        onsubmit="return confirm('정말 삭제하시겠습니까?')">
-                        <button type="submit" class="btn btn-outline-danger btn-sm" title="게시글 삭제">
-                            <i class="bi bi-trash"></i>
-                            <span class="sr-only">게시글 삭제</span>
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="post-content">{{ post.content }}</div>
-
-
-
-                <!-- 첨부 파일 (구글 드라이브) -->
-                {% if post.files %}
-                {% set files = post.files|from_json %}
-                <div class="attached-files mb-4">
-                    <div class="row g-3">
-                        {% for file in files %}
-                        <div class="col-12">
-                            <div class="card h-100 border-light shadow-sm overflow-hidden">
-                                {% if file.mime_type.startswith('image/') %}
-                                <div class="bg-light text-center">
-                                    {% set thumb_url = file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' %}
-                                    <a href="{{ url_for('view_post', post_id=post.id) }}">
-                                        <img src="{{ thumb_url }}" 
-                                             class="img-fluid" alt="{{ file.name }}" 
-                                             style="width: 100%; max-height: 500px; object-fit: contain;"
-                                             onerror="this.src='https://placehold.co/800x400?text=Image+Not+Found'; this.onerror=null;">
-                                    </a>
-                                </div>
-                                {% elif file.mime_type.startswith('video/') %}
-                                <div class="ratio ratio-16x9 bg-dark">
-                                    {% set embed_url = file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' %}
-                                    <iframe src="{{ embed_url }}" class="w-100 h-100" allow="autoplay" allowfullscreen></iframe>
-                                </div>
-                                {% else %}
-                                <div class="p-4 bg-light d-flex align-items-center justify-content-center">
-                                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="text-decoration-none text-center">
-                                        <i class="bi bi-file-earmark-arrow-down" style="font-size: 3rem; color: #6c757d;"></i>
-                                        <div class="small text-muted">{{ file.name }}</div>
-                                    </a>
-                                </div>
-                                {% endif %}
-                            </div>
+        <div class="card mb-5 border-0 shadow-sm">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.2rem;">
+                            {{ post.author.username[0]|upper }}
                         </div>
-                        {% endfor %}
+                        <div>
+                            <h6 class="mb-0 fw-bold">{{ post.author.username }}</h6>
+                            <small class="text-muted">{{ post.created_at|korean_time }}</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if not post.is_public %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                            <i class="bi bi-lock"></i> 비공개
+                        </span>
+                        {% endif %}
+                        {% if current_user.id == post.author_id %}
+                        <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" class="inline-form" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                            <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" title="게시글 삭제">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
-                {% endif %}
+                <div class="post-content mb-3" style="font-size: 1.1rem; color: var(--text-main);">
+                    {{ post.content }}
+                </div>
+            </div>
+
+            <!-- 첨부 파일 영역 (Edge-to-Edge) -->
+            {% if post.files %}
+            {% set files = post.files|from_json %}
+            <div class="attached-files">
+                {% for file in files %}
+                <div class="border-top border-light">
+                    {% if file.mime_type.startswith('image/') %}
+                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="d-block bg-light">
+                        <img src="{{ file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' }}" 
+                             class="w-100" alt="{{ file.name }}" 
+                             style="max-height: 600px; object-fit: cover; display: block;">
+                    </a>
+                    {% elif file.mime_type.startswith('video/') %}
+                    <div class="ratio ratio-16x9">
+                        <iframe src="{{ file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' }}" allowfullscreen></iframe>
+                    </div>
+                    {% else %}
+                    <div class="p-4 bg-light text-center border-bottom border-light">
+                        <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-file-earmark-arrow-down me-2"></i> {{ file.name }} 다운로드
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
                 <!-- URL 미리보기 -->
                 {% if post.url_previews %}

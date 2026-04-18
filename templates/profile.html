@@ -4,86 +4,91 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-lg-8 mx-auto">
-        <!-- 프로필 정보 -->
-        <div class="card mb-4 shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">
-                    <i class="bi bi-person-circle"></i> 프로필
-                </h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 text-center">
-                        <div class="mb-3">
-                            <i class="bi bi-person-circle display-1 text-primary"></i>
+    <div class="col-lg-9 mx-auto">
+        <!-- 프로필 정보 카드 -->
+        <div class="card border-0 shadow-sm mb-5 overflow-hidden">
+            <div class="p-4 p-md-5">
+                <div class="row align-items-center">
+                    <div class="col-md-auto text-center mb-4 mb-md-0">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px; font-weight: 700; font-size: 2.5rem;">
+                            {{ current_user.username[0]|upper }}
                         </div>
                     </div>
-                    <div class="col-md-9">
-                        <h5>{{ current_user.username }}</h5>
-                        <p class="text-muted">
-                            <i class="bi bi-calendar"></i> 가입일: {{ current_user.created_at|korean_time }}
-                        </p>
-                        {% if current_user.last_login %}
-                        <p class="text-muted">
-                            <i class="bi bi-clock"></i> 마지막 로그인: {{ current_user.last_login|korean_time }}
-                        </p>
-                        {% endif %}
-                        <p class="text-muted">
-                            <i class="bi bi-file-text"></i> 게시글 수: {{ user_posts|length }}개
-                        </p>
+                    <div class="col-md ms-md-4">
+                        <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                            <h2 class="fw-bold mb-0 text-main" style="letter-spacing: -0.03em;">{{ current_user.username }}</h2>
+                            <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">Member</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-auto">
+                                <div class="small text-muted mb-1">가입일</div>
+                                <div class="fw-medium">{{ current_user.created_at|korean_time }}</div>
+                            </div>
+                            {% if current_user.last_login %}
+                            <div class="col-auto px-md-4 border-start border-light">
+                                <div class="small text-muted mb-1">마지막 로그인</div>
+                                <div class="fw-medium">{{ current_user.last_login|korean_time }}</div>
+                            </div>
+                            {% endif %}
+                            <div class="col-auto px-md-4 border-start border-light">
+                                <div class="small text-muted mb-1">게시글</div>
+                                <div class="fw-bold text-primary">{{ user_posts|length }}개</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- 게시물 섹션 타이틀 -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold mb-0 text-main"><i class="bi bi-grid me-2"></i> 내 기록들</h5>
+            <a href="{{ url_for('new_post') }}" class="btn btn-primary btn-sm px-3" style="border-radius: 8px;">새 글 쓰기</a>
+        </div>
+
         <!-- 내 게시글 목록 -->
-        <div class="card shadow">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-file-text"></i> 내 게시글
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if user_posts %}
-                    {% for post in user_posts %}
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
+        <div class="row g-4">
+            {% if user_posts %}
+                {% for post in user_posts %}
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm transition-transform h-100">
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div class="flex-grow-1">
-                                    <div class="post-content">{{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}</div>
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock"></i> {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    <div class="post-content mb-2" style="font-size: 1rem; color: var(--text-main);">
+                                        {{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3 mt-3">
+                                        <small class="text-muted"><i class="bi bi-clock me-1"></i> {{ post.created_at.strftime('%Y-%m-%d') }}</small>
                                         {% if not post.is_public %}
-                                            <span class="badge bg-warning ms-2">
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.7rem;">
                                                 <i class="bi bi-lock"></i> 비공개
                                             </span>
                                         {% endif %}
-                                        <span class="ms-2">
-                                            <i class="bi bi-chat"></i> 댓글 {{ post.comments|length }}개
-                                        </span>
-                                    </small>
+                                        <small class="text-muted"><i class="bi bi-chat-dots me-1"></i> 댓글 {{ post.comments|length }}</small>
+                                    </div>
                                 </div>
                                 <div class="ms-3">
-                                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm">
-                                        <i class="bi bi-eye"></i> 보기
+                                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-link text-primary p-0 text-decoration-none fw-bold small">
+                                        상세보기 <i class="bi bi-chevron-right ms-1"></i>
                                     </a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="bi bi-inbox display-4 text-muted"></i>
-                        <h5 class="mt-3">아직 게시글이 없습니다</h5>
-                        <p class="text-muted">첫 번째 게시글을 작성해보세요!</p>
-                        <a href="{{ url_for('new_post') }}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> 새 글 작성
-                        </a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="card border-0 bg-light bg-opacity-50 py-5 text-center">
+                        <div class="py-5">
+                            <i class="bi bi-journal-text mb-3 d-block text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <h5 class="fw-bold text-muted">아직 작성한 글이 없습니다</h5>
+                            <p class="text-muted small">함께 나누고 싶은 소중한 순간을 기록해보세요.</p>
+                        </div>
                     </div>
-                {% endif %}
-            </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

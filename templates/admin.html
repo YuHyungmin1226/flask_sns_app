@@ -5,214 +5,156 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <div class="card shadow">
-            <div class="card-header bg-danger text-white">
-                <h4 class="mb-0">
-                    <i class="bi bi-gear"></i> 관리자 패널
-                </h4>
-            </div>
-            <div class="card-body">
-                <!-- 통계 -->
-                <div class="row mb-4">
+        <div class="card border-0 shadow-sm mb-5">
+            <div class="p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom border-light">
+                    <h3 class="fw-bold mb-0 text-main" style="letter-spacing: -0.03em;">관리자 제어 센터</h3>
+                    <div class="text-muted small">실시간 시스템 요약</div>
+                </div>
+
+                <!-- 통계 카드 섹션 -->
+                <div class="row g-4 mb-5">
                     <div class="col-md-3">
-                        <div class="card bg-primary text-white">
-                            <div class="card-body text-center">
-                                <h3>{{ users|length }}</h3>
-                                <p class="mb-0">전체 사용자</p>
-                            </div>
+                        <div class="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-10 text-center">
+                            <div class="text-primary small fw-bold mb-1">전체 사용자</div>
+                            <h2 class="fw-bold mb-0 text-primary">{{ users|length }}</h2>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card bg-success text-white">
-                            <div class="card-body text-center">
-                                <h3>{{ posts|length }}</h3>
-                                <p class="mb-0">전체 게시글</p>
-                            </div>
+                        <div class="p-4 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-10 text-center">
+                            <div class="text-success small fw-bold mb-1">전체 게시글</div>
+                            <h2 class="fw-bold mb-0 text-success">{{ posts|length }}</h2>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card bg-info text-white">
-                            <div class="card-body text-center">
-                                <h3>{{ posts|selectattr('is_public', 'equalto', true)|list|length }}</h3>
-                                <p class="mb-0">공개 게시글</p>
-                            </div>
+                        <div class="p-4 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-10 text-center">
+                            <div class="text-info small fw-bold mb-1">공개된 글</div>
+                            <h2 class="fw-bold mb-0 text-info">{{ posts|selectattr('is_public', 'equalto', true)|list|length }}</h2>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card bg-warning text-white">
-                            <div class="card-body text-center">
-                                <h3>{{ posts|selectattr('is_public', 'equalto', false)|list|length }}</h3>
-                                <p class="mb-0">비공개 게시글</p>
-                            </div>
+                        <div class="p-4 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-10 text-center">
+                            <div class="text-warning small fw-bold mb-1">비공개 글</div>
+                            <h2 class="fw-bold mb-0 text-warning">{{ posts|selectattr('is_public', 'equalto', false)|list|length }}</h2>
                         </div>
                     </div>
                 </div>
 
-                <!-- 승인 대기 사용자 (승인 요청이 있을 때만 표시) -->
+                <!-- 승인 대기 사용자 섹션 -->
                 {% if pending_users %}
-                <div class="card mb-4 border-warning">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="bi bi-clock-history"></i> 승인 대기 사용자 <span class="badge bg-danger rounded-pill">{{
-                                pending_users|length }}</span>
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>사용자명</th>
-                                        <th>가입일</th>
-                                        <th>작업</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for user in pending_users %}
-                                    <tr>
-                                        <td>{{ user.id }}</td>
-                                        <td class="fw-bold">{{ user.username }}</td>
-                                        <td>{{ user.created_at|korean_time }}</td>
-                                        <td>
-                                            <div class="d-flex gap-2">
-                                                <form method="POST"
-                                                    action="{{ url_for('approve_user', user_id=user.id) }}"
-                                                    onsubmit="return confirm('{{ user.username }} 님을 승인하시겠습니까?')">
-                                                    <button type="submit" class="btn btn-success btn-sm">
-                                                        <i class="bi bi-check-circle"></i> 승인
-                                                    </button>
-                                                </form>
-                                                <form method="POST"
-                                                    action="{{ url_for('reject_user', user_id=user.id) }}"
-                                                    onsubmit="return confirm('{{ user.username }} 님의 가입 요청을 거절하시겠습니까?\n계정이 삭제됩니다.')">
-                                                    <button type="submit" class="btn btn-danger btn-sm">
-                                                        <i class="bi bi-x-circle"></i> 거절
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="mb-5">
+                    <h5 class="fw-bold mb-4 text-warning"><i class="bi bi-clock-history me-2"></i> 가입 승인 대기</h5>
+                    <div class="table-responsive rounded-4 border border-light overflow-hidden">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">사용자명</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">가입일시</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase text-end">작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in pending_users %}
+                                <tr>
+                                    <td class="px-4 py-3 fw-bold">{{ user.username }}</td>
+                                    <td class="px-4 py-3 small text-muted">{{ user.created_at|korean_time }}</td>
+                                    <td class="px-4 py-3 text-end">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <form method="POST" action="{{ url_for('approve_user', user_id=user.id) }}" onsubmit="return confirm('승인하시겠습니까?')">
+                                                <button type="submit" class="btn btn-primary btn-sm px-3" style="border-radius: 6px;">승인</button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('reject_user', user_id=user.id) }}" onsubmit="return confirm('거절하시겠습니까?')">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm px-3" style="border-radius: 6px;">거절</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- 사용자 관리 -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="bi bi-people"></i> 사용자 관리
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>사용자명</th>
-                                        <th>가입일</th>
-                                        <th>마지막 로그인</th>
-                                        <th>게시글 수</th>
-                                        <th>작업</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for user in users %}
-                                    <tr>
-                                        <td>{{ user.id }}</td>
-                                        <td>
-                                            {{ user.username }}
-                                            {% if user.username == 'admin' %}
-                                            <span class="badge bg-danger">관리자</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ user.created_at|korean_time }}</td>
-                                        <td>
-                                            {% if user.last_login %}
-                                            {{ user.last_login|korean_time }}
-                                            {% else %}
-                                            <span class="text-muted">로그인 기록 없음</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ user.posts|length }}개</td>
-                                        <td>
-                                            {% if user.username != 'admin' %}
-                                            <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}"
-                                                style="display: inline;"
-                                                onsubmit="return confirm('정말 이 사용자를 삭제하시겠습니까?\\n이 사용자의 모든 게시글과 댓글이 함께 삭제됩니다.')">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                    <i class="bi bi-trash"></i> 삭제
-                                                </button>
-                                            </form>
-                                            {% else %}
-                                            <span class="text-muted">삭제 불가</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                <!-- 사용자 관리 상세 -->
+                <div class="mb-5">
+                    <h5 class="fw-bold mb-4"><i class="bi bi-people me-2"></i> 사용자 관리</h5>
+                    <div class="table-responsive rounded-4 border border-light overflow-hidden">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">사용자</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">마지막 로그인</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">게시글</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase text-end">상태 / 작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="fw-bold">{{ user.username }}</div>
+                                        <div class="small text-muted">ID: {{ user.id }}</div>
+                                    </td>
+                                    <td class="px-4 py-3 small text-muted">
+                                        {{ user.last_login|korean_time if user.last_login else '기록 없음' }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="badge bg-light text-dark border">{{ user.posts|length }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        {% if user.username == 'admin' %}
+                                        <span class="badge bg-danger rounded-pill px-3">Primary Admin</span>
+                                        {% else %}
+                                        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" onsubmit="return confirm('영구 삭제하시겠습니까?')">
+                                            <button type="submit" class="btn btn-link text-danger text-decoration-none small p-0 fw-medium">계정 삭제</button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- 게시글 관리 -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="bi bi-file-text"></i> 게시글 관리
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>작성자</th>
-                                        <th>내용 미리보기</th>
-                                        <th>작성일</th>
-                                        <th>공개 여부</th>
-                                        <th>댓글 수</th>
-                                        <th>작업</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for post in posts %}
-                                    <tr>
-                                        <td>{{ post.id }}</td>
-                                        <td>{{ post.author.username }}</td>
-                                        <td>
-                                            <div class="text-truncate" style="max-width: 200px;"
-                                                title="{{ post.content }}">
-                                                {{ post.content[:50] }}{% if post.content|length > 50 %}...{% endif %}
-                                            </div>
-                                        </td>
-                                        <td>{{ post.created_at|korean_time }}</td>
-                                        <td>
-                                            {% if post.is_public %}
-                                            <span class="badge bg-success">공개</span>
-                                            {% else %}
-                                            <span class="badge bg-warning">비공개</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ post.comments|length }}개</td>
-                                        <td>
-                                            <a href="{{ url_for('view_post', post_id=post.id) }}"
-                                                class="btn btn-outline-primary btn-sm">
-                                                <i class="bi bi-eye"></i> 보기
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                <!-- 게시글 관리 상세 -->
+                <div>
+                    <h5 class="fw-bold mb-4"><i class="bi bi-file-text me-2"></i> 콘텐츠 모니터링</h5>
+                    <div class="table-responsive rounded-4 border border-light overflow-hidden">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">작성자 / 일시</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">내용 미리보기</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">상태</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase text-end">보기</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for post in posts %}
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="fw-bold">{{ post.author.username }}</div>
+                                        <div class="small text-muted" style="font-size: 0.75rem;">{{ post.created_at|korean_time }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="text-truncate small" style="max-width: 300px;">{{ post.content[:100] }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {% if post.is_public %}
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Public</span>
+                                        {% else %}
+                                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">Private</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-link text-primary text-decoration-none p-0 fw-bold small">검토 <i class="bi bi-chevron-right"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

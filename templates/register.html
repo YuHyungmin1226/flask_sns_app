@@ -3,44 +3,42 @@
 {% block title %}회원가입 - 개인 SNS{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-header bg-success text-white text-center">
-                <h4 class="mb-0">
-                    <i class="bi bi-person-plus"></i> 회원가입
-                </h4>
-            </div>
-            <div class="card-body">
-                <form method="POST">
+<div class="row justify-content-center py-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="p-4 p-md-5 text-center">
+                <div class="mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                        <i class="bi bi-person-plus-fill" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="fw-bold text-main" style="letter-spacing: -0.03em;">Join Us</h3>
+                    <p class="text-muted small">새로운 계정을 생성하세요</p>
+                </div>
+
+                <form method="POST" class="text-start">
                     <div class="mb-3">
-                        <label for="username" class="form-label">사용자명</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                        <div class="form-text">영문, 숫자, 언더스코어만 사용 가능합니다.</div>
+                        <label for="username" class="form-label small fw-semibold">사용자명</label>
+                        <input type="text" class="form-control bg-light border-0 py-2" id="username" name="username" required style="border-radius: 8px;">
+                        <div class="form-text small" style="font-size: 0.75rem;">(영문, 숫자, 언더스코어)</div>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">비밀번호</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                        <div class="form-text">8자 이상 권장합니다.</div>
+                        <label for="password" class="form-label small fw-semibold">비밀번호</label>
+                        <input type="password" class="form-control bg-light border-0 py-2" id="password" name="password" required style="border-radius: 8px;">
                     </div>
-                    <div class="mb-3">
-                        <label for="confirm_password" class="form-label">비밀번호 확인</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    <div class="mb-4">
+                        <label for="confirm_password" class="form-label small fw-semibold">비밀번호 확인</label>
+                        <input type="password" class="form-control bg-light border-0 py-2" id="confirm_password" name="confirm_password" required style="border-radius: 8px;">
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-person-plus"></i> 회원가입
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary py-2" style="border-radius: 8px;">
+                            가입하기
                         </button>
                     </div>
                 </form>
                 
-                <hr>
-                
-                <div class="text-center">
-                    <p class="mb-0">이미 계정이 있으신가요?</p>
-                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-box-arrow-in-right"></i> 로그인
-                    </a>
+                <div class="mt-4 pt-3 border-top border-light">
+                    <p class="mb-2 small text-muted">이미 계정이 있으신가요?</p>
+                    <a href="{{ url_for('login') }}" class="text-primary text-decoration-none small fw-bold">로그인하러 가기</a>
                 </div>
             </div>
         </div>

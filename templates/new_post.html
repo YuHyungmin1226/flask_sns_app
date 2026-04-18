@@ -5,68 +5,58 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">
-                    <i class="bi bi-plus-circle"></i> 새 글 작성
-                </h4>
-            </div>
-            <div class="card-body">
+        <div class="card border-0 shadow-sm">
+            <div class="p-4 p-md-5">
+                <div class="mb-4">
+                    <h3 class="fw-bold text-main" style="letter-spacing: -0.03em;">새로운 이야기 공유</h3>
+                    <p class="text-muted">무엇을 공유하고 싶으신가요?</p>
+                </div>
+
                 <form method="POST" enctype="multipart/form-data" id="postForm">
-                    <div class="mb-3">
-                        <label for="content" class="form-label">내용</label>
-                        <textarea class="form-control" id="content" name="content" rows="6" 
-                                  placeholder="무엇을 공유하고 싶으신가요?&#10;&#10;URL을 포함하면 자동으로 미리보기가 생성됩니다.&#10;예: https://www.youtube.com/watch?v=..."></textarea>
-                        <div class="form-text">
-                            <i class="bi bi-info-circle"></i> 
-                            URL을 포함하면 자동으로 미리보기가 생성됩니다. YouTube 링크도 지원됩니다.
-                        </div>
+                    <div class="mb-4">
+                        <textarea class="form-control border-light-subtle" id="content" name="content" rows="8" 
+                                  style="font-size: 1.1rem; border-radius: 12px; transition: var(--transition);"
+                                  placeholder="내용을 입력하세요 (URL 포함 시 미리보기가 자동 생성됩니다)"></textarea>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="files" class="form-label">
-                            <i class="bi bi-paperclip"></i> 파일 첨부 (구글 드라이브)
+                    <div class="mb-4 p-4 rounded-4 bg-light bg-opacity-50 border border-light">
+                        <label for="files" class="form-label fw-semibold mb-2">
+                            <i class="bi bi-paperclip me-1"></i> 파일 첨부
                         </label>
-                        <input type="file" class="form-control" id="files" name="files" multiple>
-                        <div class="form-text">
-                            <i class="bi bi-info-circle"></i> 
-                            이미지, 영상 등을 한 번에 **최대 30개(총 300MB)**까지 선택할 수 있습니다. 업로드된 파일은 구글 드라이브에 안전하게 보관됩니다.
+                        <input type="file" class="form-control border-0 shadow-none bg-white" id="files" name="files" multiple style="border-radius: 10px;">
+                        <div class="form-text mt-2 small">
+                            <i class="bi bi-info-circle me-1"></i> 
+                            이미지, 영상 등 **최대 30개(총 300MB)**까지 첨부 가능합니다.
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="is_public" name="is_public" checked>
-                            <label class="form-check-label" for="is_public">
-                                <i class="bi bi-globe"></i> 공개 게시글
+                    <div class="mb-4">
+                        <div class="form-check form-switch p-0 d-flex align-items-center gap-3">
+                            <input class="form-check-input ms-0 mt-0" type="checkbox" id="is_public" name="is_public" checked style="width: 3em; height: 1.5em; cursor: pointer;">
+                            <label class="form-check-label fw-medium" for="is_public" style="cursor: pointer;">
+                                <i class="bi bi-globe me-1"></i> 공개로 게시함
                             </label>
-                        </div>
-                        <div class="form-text">
-                            체크 해제하면 나만 볼 수 있는 비공개 게시글이 됩니다.
                         </div>
                     </div>
                     
                     <!-- 업로드 프로그레스 바 -->
-                    <div id="uploadProgressContainer" class="mb-3 d-none">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span id="uploadStatusText" class="small fw-bold text-primary">업로드 중...</span>
+                    <div id="uploadProgressContainer" class="mb-4 d-none p-4 rounded-4 border border-primary border-opacity-10 bg-primary bg-opacity-10">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span id="uploadStatusText" class="small fw-bold text-primary">클라우드에 전송 중...</span>
                             <span id="uploadPercentage" class="small fw-bold text-primary">0%</span>
                         </div>
-                        <div class="progress" style="height: 10px;">
-                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                        <div class="progress" style="height: 6px; background-color: rgba(255,255,255,0.5);">
+                            <div id="progressBar" class="progress-bar progress-bar-animated" 
                                  role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <div id="uploadDetails" class="small text-muted mt-1 text-center">
-                            대용량 파일의 경우 시간이 다소 소요될 수 있습니다. 창을 닫지 마세요.
                         </div>
                     </div>
                     
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary" id="cancelBtn">
-                            <i class="bi bi-arrow-left"></i> 취소
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-light">
+                        <a href="{{ url_for('index') }}" class="btn btn-link text-muted text-decoration-none fw-medium" id="cancelBtn">
+                            <i class="bi bi-arrow-left me-1"></i> 취소
                         </a>
-                        <button type="submit" class="btn btn-primary" id="submitBtn">
-                            <i class="bi bi-send"></i> 게시하기
+                        <button type="submit" class="btn btn-primary px-4 py-2" id="submitBtn" style="border-radius: 10px;">
+                            <i class="bi bi-send-fill me-2"></i> 게시글 완성하기
                         </button>
                     </div>
                 </form>

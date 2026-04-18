@@ -3,49 +3,45 @@
 {% block title %}로그인 - 개인 SNS{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white text-center">
-                <h4 class="mb-0">
-                    <i class="bi bi-box-arrow-in-right"></i> 로그인
-                </h4>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">사용자명</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+<div class="row justify-content-center py-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="p-4 p-md-5 text-center">
+                <div class="mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                        <i class="bi bi-intersect" style="font-size: 2rem;"></i>
                     </div>
+                    <h3 class="fw-bold text-main" style="letter-spacing: -0.03em;">Welcome back</h3>
+                    <p class="text-muted small">FlaskSNS에 로그인하세요</p>
+                </div>
+
+                <form method="POST" class="text-start">
                     <div class="mb-3">
-                        <label for="password" class="form-label">비밀번호</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <label for="username" class="form-label small fw-semibold">사용자명</label>
+                        <input type="text" class="form-control bg-light border-0 py-2" id="username" name="username" required style="border-radius: 8px;">
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-box-arrow-in-right"></i> 로그인
+                    <div class="mb-4">
+                        <label for="password" class="form-label small fw-semibold">비밀번호</label>
+                        <input type="password" class="form-control bg-light border-0 py-2" id="password" name="password" required style="border-radius: 8px;">
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary py-2" style="border-radius: 8px;">
+                            로그인하기
                         </button>
                     </div>
                 </form>
                 
-                <hr>
-                
-                <div class="text-center">
-                    <p class="mb-0">계정이 없으신가요?</p>
-                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-person-plus"></i> 회원가입
-                    </a>
+                <div class="mt-4 pt-3 border-top border-light">
+                    <p class="mb-2 small text-muted">계정이 없으신가요?</p>
+                    <a href="{{ url_for('register') }}" class="text-primary text-decoration-none small fw-bold">새로운 계정 만들기</a>
                 </div>
-                
-                <hr>
-                
-                <div class="alert alert-info">
-                    <small>
-                        <strong>기본 관리자 계정:</strong><br>
-                        사용자명: <code>admin</code><br>
-                        비밀번호: <code>admin123</code>
-                    </small>
-                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 p-3 rounded-4 bg-white bg-opacity-50 border border-light text-center" style="backdrop-filter: blur(5px);">
+            <div class="small">
+                <span class="text-muted">관리자용 테스트 계정</span><br>
+                <code class="text-primary fw-bold">admin / admin123</code>
             </div>
         </div>
     </div>
