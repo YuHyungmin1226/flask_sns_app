@@ -248,7 +248,8 @@
                         <i class="bi bi-intersect"></i> FlaskSNS
                     </a>
 
-                    <!-- 검색 창 -->
+                    <!-- 검색 창 (로그인 시에만 표시) -->
+                    {% if current_user.is_authenticated %}
                     <form class="d-none d-md-flex flex-grow-1 mx-4" action="{{ url_for('main.search') }}" method="GET">
                         <div class="input-group">
                             <span class="input-group-text bg-light border-0 ps-3" style="border-radius: 20px 0 0 20px;">
@@ -257,6 +258,7 @@
                             <input class="form-control bg-light border-0 ps-0" type="search" name="q" placeholder="소식이나 친구 검색..." aria-label="Search" style="border-radius: 0 20px 20px 0; font-size: 0.9rem;">
                         </div>
                     </form>
+                    {% endif %}
                     
                     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                         <span class="navbar-toggler-icon"></span>
@@ -368,16 +370,25 @@
     <!-- Global JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
+    <!-- Flash Messages Data (Jinja2와 JS의 분리 - IDE 오류 해결) -->
+    <script id="flash-data" type="application/json">
+        {{ get_flashed_messages(with_categories=true) | tojson }}
+    </script>
+    
     <!-- Flash Messages to Toasts -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        SNS.showToast("{{ message }}", "{{ category }}");
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+            const flashDataElement = document.getElementById('flash-data');
+            if (flashDataElement) {
+                try {
+                    const messages = JSON.parse(flashDataElement.textContent);
+                    messages.forEach(([category, message]) => {
+                        SNS.showToast(message, category);
+                    });
+                } catch (e) {
+                    console.error("Flash message processing error:", e);
+                }
+            }
         });
     </script>
     
