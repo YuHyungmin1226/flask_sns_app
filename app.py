@@ -154,16 +154,17 @@ def init_db():
                 admin_user = User(
                     username='admin',
                     password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123')),
-                    password_changed=False
+                    password_changed=False,
+                    is_approved=True
                 )
                 db.session.add(admin_user)
                 db.session.commit()
-                print("기본 관리자 계정이 생성되었습니다.")
+                print("기본 관리자 계정이 생성 및 승인되었습니다.")
             else:
                 if not admin_user.is_approved:
                     admin_user.is_approved = True
                     db.session.commit()
-                    print("관리자 계정이 승인되었습니다.")
+                    print("관리자 계정이 활성화되었습니다.")
 
     except Exception as e:
         print(f"데이터베이스 초기화 오류: {e}")
