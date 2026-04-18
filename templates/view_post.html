@@ -48,15 +48,20 @@
                             <div class="card h-100 border-light shadow-sm">
                                 {% if file.mime_type.startswith('image/') %}
                                 <div class="ratio ratio-1x1 bg-light">
-                                    <img src="{{ file.view_link }}" class="card-img-top object-fit-cover" alt="{{ file.name }}" 
+                                    <img src="{{ file.thumbnail_link if file.thumbnail_link else file.view_link }}" 
+                                         class="card-img-top object-fit-cover" alt="{{ file.name }}" 
                                          onerror="this.src='https://placehold.co/400x400?text=Image+Not+Found'; this.onerror=null;">
                                 </div>
                                 {% elif file.mime_type.startswith('video/') %}
                                 <div class="ratio ratio-16x9 bg-dark">
+                                    {% if file.embed_link %}
+                                    <iframe src="{{ file.embed_link }}" class="w-100 h-100" allow="autoplay" allowfullscreen></iframe>
+                                    {% else %}
                                     <video class="w-100 h-100" controls>
                                         <source src="{{ file.download_link }}" type="{{ file.mime_type }}">
                                         브라우저가 비디오 태그를 지원하지 않습니다.
                                     </video>
+                                    {% endif %}
                                 </div>
                                 {% else %}
                                 <div class="ratio ratio-1x1 bg-light d-flex align-items-center justify-content-center">
@@ -67,10 +72,10 @@
                                     <p class="card-text small text-truncate mb-2" title="{{ file.name }}">{{ file.name }}</p>
                                     <div class="mt-auto d-grid">
                                         <a href="{{ file.view_link }}" target="_blank" class="btn btn-sm btn-outline-primary mb-1">
-                                            <i class="bi bi-eye"></i> 열기
+                                            <i class="bi bi-eye"></i> 드라이브에서 열기
                                         </a>
                                         <a href="{{ file.download_link }}" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-download"></i> 다운로드
+                                            <i class="bi bi-download"></i> 직접 다운로드
                                         </a>
                                     </div>
                                 </div>

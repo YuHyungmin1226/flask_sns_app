@@ -302,12 +302,27 @@ def new_post():
                     file.content_type or 'application/octet-stream'
                 )
                 if file_info:
+                    file_id = file_info.get('id')
+                    mime_type = file_info.get('mimeType', '')
+                    
+                    # 미리보기용 링크 가공
+                    thumbnail_link = file_info.get('thumbnailLink')
+                    if thumbnail_link and mime_type.startswith('image/'):
+                        # 썸네일 해상도를 높이기 위해 =s220 등을 제거하고 =s1000으로 교체
+                        thumbnail_link = thumbnail_link.split('=s')[0] + '=s1000'
+                    
+                    embed_link = None
+                    if mime_type.startswith('video/'):
+                        embed_link = f"https://drive.google.com/file/d/{file_id}/preview"
+                    
                     uploaded_files.append({
-                        'id': file_info.get('id'),
+                        'id': file_id,
                         'name': file_info.get('name'),
                         'view_link': file_info.get('webViewLink'),
                         'download_link': file_info.get('webContentLink'),
-                        'mime_type': file_info.get('mimeType'),
+                        'thumbnail_link': thumbnail_link,
+                        'embed_link': embed_link,
+                        'mime_type': mime_type,
                         'size': file_info.get('size')
                     })
         

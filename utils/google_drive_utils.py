@@ -74,7 +74,7 @@ class GoogleDriveManager:
             
             file_info = self.service.files().get(
                 fileId=file_id,
-                fields='id, name, webViewLink, webContentLink, mimeType, size'
+                fields='id, name, webViewLink, webContentLink, thumbnailLink, mimeType, size'
             ).execute()
             
             return file_info
