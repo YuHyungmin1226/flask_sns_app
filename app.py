@@ -7,6 +7,7 @@ from flask_talisman import Talisman
 from dotenv import load_dotenv
 import markdown2
 import bleach
+from bleach.css_sanitizer import CSSSanitizer
 from markupsafe import Markup
 
 # 내부 모듈 임포트
@@ -117,8 +118,9 @@ def create_app():
             'a': ['href', 'title', 'target']
         })
         
-        # Sanitize the HTML
-        clean_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs)
+        # Sanitize the HTML with CSS support for tables
+        css_sanitizer = CSSSanitizer(allowed_css_properties=['color', 'font-weight', 'text-align', 'background-color', 'border'])
+        clean_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs, css_sanitizer=css_sanitizer)
         return Markup(clean_html)
 
     # 구글 드라이브 DB 복구
