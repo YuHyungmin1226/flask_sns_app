@@ -61,8 +61,8 @@ def create_app():
         'script-src': ['\'self\'', 'https://cdn.jsdelivr.net', '\'unsafe-inline\''],
         'style-src': ['\'self\'', 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com', '\'unsafe-inline\''],
         'font-src': ['\'self\'', 'https://cdn.jsdelivr.net', 'https://fonts.gstatic.com'],
-        'img-src': ['\'self\'', 'data:', 'https://*.googleusercontent.com', 'https://drive.google.com'],
-        'frame-src': ['\'self\'', 'https://drive.google.com', 'https://www.youtube.com']
+        'img-src': ['\'self\'', 'data:', 'https://*.googleusercontent.com', 'https://drive.google.com', 'https://*.youtube.com', 'https://*.ytimg.com', 'https://img.youtube.com', 'https://i.ytimg.com'],
+        'frame-src': ['\'self\'', 'https://drive.google.com', 'https://*.youtube.com', 'https://www.youtube.com', 'https://youtube.com']
     }
     Talisman(app, content_security_policy=csp, force_https=False)
 

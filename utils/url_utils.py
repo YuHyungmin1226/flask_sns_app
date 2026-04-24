@@ -49,9 +49,12 @@ class URLPreviewGenerator:
     def get_youtube_data(self, video_id: str) -> Optional[Dict]:
         """YouTube 데이터 추출 (oEmbed API 사용)"""
         try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
             # YouTube oEmbed API 사용
             oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
-            response = requests.get(oembed_url, timeout=10)
+            response = requests.get(oembed_url, headers=headers, timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
@@ -68,7 +71,7 @@ class URLPreviewGenerator:
                 thumbnail_url = None
                 for url in thumbnail_urls:
                     try:
-                        thumb_response = requests.head(url, timeout=5)
+                        thumb_response = requests.head(url, headers=headers, timeout=5)
                         if thumb_response.status_code == 200:
                             thumbnail_url = url
                             break
