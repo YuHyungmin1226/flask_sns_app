@@ -85,8 +85,21 @@ def new_post():
                 file_content = file.read()
                 
                 # MIME 타입 검증 (파일 헤더 기반)
+                import mimetypes
                 kind = filetype.guess(file_content)
-                mime = kind.mime if kind else 'application/octet-stream'
+                mime = kind.mime if kind else None
+                
+                # filetype이 인식 못하면 브라우저 제공 타입이나 확장자로 판단 (HEIC 등 대응)
+                if not mime:
+                    mime = file.content_type
+                if not mime or mime == 'application/octet-stream':
+                    mime, _ = mimetypes.guess_type(file.filename)
+                
+                if not mime:
+                    mime = 'application/octet-stream'
+                
+                # 소문자 변환으로 비교 안정성 확보
+                mime = mime.lower()
                 
                 allowed_prefixes = ['image/', 'video/', 'application/pdf', 'audio/']
                 allowed_exact = ['application/zip', 'application/x-zip-compressed', 'text/plain']
@@ -106,7 +119,11 @@ def new_post():
                     file_id = file_info.get('id')
                     mime_type = file_info.get('mimeType', '')
                     thumbnail_link = file_info.get('thumbnailLink')
-                    if thumbnail_link and mime_type.startswith('image/'):
+                    
+                    # 이미지이거나, HEIC/HEIF 등 미리보기가 가능한 파일인 경우 썸네일 처리
+                    is_image = mime_type.startswith('image/') or mime_type in ['image/heic', 'image/heif']
+                    
+                    if thumbnail_link and is_image:
                         thumbnail_link = thumbnail_link.split('=s')[0] + '=s1000'
                     
                     embed_link = f"https://drive.google.com/file/d/{file_id}/preview" if mime_type.startswith('video/') else None
