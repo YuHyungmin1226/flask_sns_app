@@ -39,7 +39,10 @@
         </div>
 
         <!-- 무한 스크롤 트리거 -->
-        <div id="infinite-scroll-trigger" class="text-center py-4 {% if not has_next %}d-none{% endif %}">
+        <div id="infinite-scroll-trigger" 
+             class="text-center py-4 {% if not has_next %}d-none{% endif %}"
+             data-has-next="{{ has_next | tojson }}"
+             data-load-url="{{ url_for('main.load_more') }}">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
@@ -211,13 +214,14 @@
         });
     });
     // 무한 스크롤 구현 (Intersection Observer)
-    let currentPage = 1;
-    let isLoading = false;
-    let hasNextPage = {{ 'true' if has_next else 'false' }};
-
     const trigger = document.getElementById('infinite-scroll-trigger');
     const container = document.getElementById('postContainer');
     const noMore = document.getElementById('no-more-posts');
+    
+    let currentPage = 1;
+    let isLoading = false;
+    let hasNextPage = trigger ? (trigger.dataset.hasNext === 'true') : false;
+    const loadMoreUrl = trigger ? trigger.dataset.loadUrl : '';
 
     if (trigger && hasNextPage) {
         const observer = new IntersectionObserver((entries) => {
@@ -233,7 +237,7 @@
         isLoading = true;
         currentPage++;
         
-        fetch(`{{ url_for('main.load_more') }}?page=${currentPage}`, {
+        fetch(`${loadMoreUrl}?page=${currentPage}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(response => response.json())
