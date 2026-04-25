@@ -133,8 +133,6 @@ def new_post():
                         'name': file_info.get('name'),
                         'view_link': file_info.get('webViewLink'),
                         'download_link': file_info.get('webContentLink'),
-                        'thumbnail_link': thumbnail_link,
-                        'embed_link': embed_link,
                         'mime_type': mime_type,
                         'size': file_info.get('size')
                     }
@@ -238,6 +236,34 @@ def delete_post(post_id):
 def profile():
     user_posts = Post.query.filter_by(author_id=current_user.id).order_by(Post.created_at.desc()).all()
     return render_template('profile.html', user_posts=user_posts)
+
+@main_bp.route('/file/thumbnail/<file_id>')
+def get_thumbnail(file_id):
+    """
+    구글 드라이브의 임시 썸네일 링크는 몇 시간 후 만료되므로, 
+    영구적인 접근을 위해 서버 측에서 리다이렉트해주는 엔드포인트입니다.
+    """
+    try:
+        # 파일 정보 가져오기 (가장 최신의 썸네일 링크 획득)
+        file_info = drive_manager.service.files().get(
+            fileId=file_id, 
+            fields='thumbnailLink'
+        ).execute()
+        
+        thumbnail_link = file_info.get('thumbnailLink')
+        if thumbnail_link:
+            # 해상도 조절 (기본값은 작으므로 s1000으로 확장)
+            if '=s' in thumbnail_link:
+                thumbnail_link = thumbnail_link.split('=s')[0] + '=s1000'
+            else:
+                thumbnail_link += '=s1000'
+            return redirect(thumbnail_link)
+        
+        # 썸네일이 없는 경우 (방금 업로드했거나 지원하지 않는 경우) 폴백
+        return redirect(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
+    except Exception as e:
+        print(f"썸네일 가져오기 오류: {e}")
+        return redirect(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
 
 @main_bp.route('/ping')
 def ping():

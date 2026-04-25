@@ -39,7 +39,7 @@
         <div class="border-top border-light">
             {% if file.mime_type.startswith('image/') %}
             <a href="{{ url_for('main.view_post', post_id=post.id) }}" class="d-block bg-light">
-                <img src="{{ file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' }}" 
+                <img src="{{ url_for('main.get_thumbnail', file_id=file.id) }}" 
                      class="w-100" alt="{{ file.name }}" 
                      style="max-height: 600px; object-fit: cover; display: block;">
             </a>

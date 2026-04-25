@@ -49,7 +49,7 @@
                             <div class="rounded-4 border border-light overflow-hidden bg-light bg-opacity-30">
                                 {% if file.mime_type.startswith('image/') %}
                                 <div class="text-center p-0">
-                                    <img src="{{ file.thumbnail_link if file.thumbnail_link else 'https://drive.google.com/thumbnail?id=' + file.id + '&sz=w1000' }}" 
+                                    <img src="{{ url_for('main.get_thumbnail', file_id=file.id) }}" 
                                          class="w-100" alt="{{ file.name }}" 
                                          style="max-height: 800px; object-fit: contain;">
                                 </div>
