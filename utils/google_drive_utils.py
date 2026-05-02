@@ -73,8 +73,8 @@ class GoogleDriveManager:
             print(f"파일 검색 오류 ({filename}): {e}")
             return None
 
-    def create_upload_session(self, filename, mimetype):
-        """브라우저 직접 업로드를 위한 구글 드라이브 세션 URI 생성"""
+    def create_upload_session(self, filename, mimetype, origin=None):
+        """브라우저 직접 업로드를 위한 구글 드라이브 세션 URI 생성 (CORS 지원)"""
         if not self.service:
             return None
         
@@ -90,6 +90,11 @@ class GoogleDriveManager:
                 "Content-Type": "application/json; charset=UTF-8",
                 "X-Upload-Content-Type": mimetype
             }
+            
+            # CORS를 허용하기 위해 Origin 헤더 추가
+            if origin:
+                headers["Origin"] = origin
+                
             metadata = {
                 'name': filename,
                 'parents': [self.folder_id]

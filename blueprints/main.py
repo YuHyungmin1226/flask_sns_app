@@ -63,7 +63,9 @@ def upload_init():
     if not filename:
         return jsonify({'success': False, 'error': '파일명이 필요합니다.'}), 400
         
-    upload_url = drive_manager.create_upload_session(filename, mimetype)
+    # CORS 대응을 위해 브라우저의 Origin 정보를 함께 전달
+    origin = request.headers.get('Origin')
+    upload_url = drive_manager.create_upload_session(filename, mimetype, origin=origin)
     if upload_url:
         return jsonify({'success': True, 'upload_url': upload_url})
     return jsonify({'success': False, 'error': '업로드 세션 생성 실패'}), 500
