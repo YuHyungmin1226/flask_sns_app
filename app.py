@@ -37,7 +37,7 @@ def create_app():
         set_db_path(db_path)
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 * 1024  # 10GB로 상향
     
     # 세션 보안 설정
     app.config.update(

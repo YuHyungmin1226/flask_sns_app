@@ -53,12 +53,55 @@ def search():
     
     return render_template('search_results.html', posts=posts, users=users, query=query)
 
+@main_bp.route('/api/upload/init', methods=['POST'])
+@login_required
+def upload_init():
+    data = request.get_json()
+    filename = data.get('filename')
+    mimetype = data.get('mimetype', 'application/octet-stream')
+    
+    if not filename:
+        return jsonify({'success': False, 'error': '파일명이 필요합니다.'}), 400
+        
+    upload_url = drive_manager.create_upload_session(filename, mimetype)
+    if upload_url:
+        return jsonify({'success': True, 'upload_url': upload_url})
+    return jsonify({'success': False, 'error': '업로드 세션 생성 실패'}), 500
+
+@main_bp.route('/api/upload/complete', methods=['POST'])
+@login_required
+def upload_complete():
+    data = request.get_json()
+    file_id = data.get('file_id')
+    
+    if not file_id:
+        return jsonify({'success': False, 'error': '파일 ID가 필요합니다.'}), 400
+        
+    file_info = drive_manager.complete_upload(file_id)
+    if file_info:
+        return jsonify({
+            'success': True,
+            'file': {
+                'id': file_info.get('id'),
+                'name': file_info.get('name'),
+                'view_link': file_info.get('webViewLink'),
+                'download_link': file_info.get('webContentLink'),
+                'mime_type': file_info.get('mimeType'),
+                'size': file_info.get('size')
+            }
+        })
+    return jsonify({'success': False, 'error': '업로드 완료 처리 실패'}), 500
+
 @main_bp.route('/post/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
     if request.method == 'POST':
         content = request.form.get('content')
         is_public = request.form.get('is_public') == 'on'
+        
+        # 직접 업로드된 파일 정보 (JSON 문자열)
+        uploaded_files_json = request.form.get('uploaded_files')
+        uploaded_files = json.loads(uploaded_files_json) if uploaded_files_json else []
         
         urls = url_preview_generator.extract_urls(content)
         url_previews = []
@@ -67,87 +110,10 @@ def new_post():
             if preview:
                 url_previews.append(preview)
         
-        uploaded_files = []
-        files = request.files.getlist('files')
-        
-        if len(files) > 30:
-            flash('파일은 한 번에 최대 30개까지만 첨부할 수 있습니다.', 'error')
-            return render_template('new_post.html')
-        
-        # filetype은 시스템 라이브러리 의존성이 없어 컨테이너 환경에서 더 안전합니다.
-        import filetype
-
-        def upload_single_file(file):
-            if not file or not file.filename:
-                return None
-            try:
-                file.seek(0)
-                file_content = file.read()
-                
-                # MIME 타입 검증 (파일 헤더 기반)
-                import mimetypes
-                kind = filetype.guess(file_content)
-                mime = kind.mime if kind else None
-                
-                # filetype이 인식 못하면 브라우저 제공 타입이나 확장자로 판단 (HEIC 등 대응)
-                if not mime:
-                    mime = file.content_type
-                if not mime or mime == 'application/octet-stream':
-                    mime, _ = mimetypes.guess_type(file.filename)
-                
-                if not mime:
-                    mime = 'application/octet-stream'
-                
-                # 소문자 변환으로 비교 안정성 확보
-                mime = mime.lower()
-                
-                allowed_prefixes = ['image/', 'video/', 'application/pdf', 'audio/']
-                allowed_exact = ['application/zip', 'application/x-zip-compressed', 'text/plain']
-                
-                is_allowed = any(mime.startswith(p) for p in allowed_prefixes) or mime in allowed_exact
-                if not is_allowed:
-                    return None
-
-                temp_stream = io.BytesIO(file_content)
-                
-                file_info = drive_manager.upload_file(
-                    temp_stream, 
-                    file.filename, 
-                    mime or 'application/octet-stream'
-                )
-                if file_info:
-                    file_id = file_info.get('id')
-                    mime_type = file_info.get('mimeType', '')
-                    thumbnail_link = file_info.get('thumbnailLink')
-                    
-                    # 이미지이거나, HEIC/HEIF 등 미리보기가 가능한 파일인 경우 썸네일 처리
-                    is_image = mime_type.startswith('image/') or mime_type in ['image/heic', 'image/heif']
-                    
-                    if thumbnail_link and is_image:
-                        thumbnail_link = thumbnail_link.split('=s')[0] + '=s1000'
-                    
-                    embed_link = f"https://drive.google.com/file/d/{file_id}/preview" if mime_type.startswith('video/') else None
-                    
-                    return {
-                        'id': file_id,
-                        'name': file_info.get('name'),
-                        'view_link': file_info.get('webViewLink'),
-                        'download_link': file_info.get('webContentLink'),
-                        'mime_type': mime_type,
-                        'size': file_info.get('size')
-                    }
-            except Exception as e:
-                print(f"파일 업로드 실패 ({file.filename}): {e}")
-            return None
-
-        if files and any(f.filename for f in files):
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                results = list(executor.map(upload_single_file, files))
-                uploaded_files = [r for r in results if r is not None]
-        
         if not content and not uploaded_files:
             flash('내용을 입력하거나 파일을 첨부해 주세요.', 'error')
             return render_template('new_post.html')
+            
         from utils.tasks import trigger_db_sync
         trigger_db_sync()
         post = Post(

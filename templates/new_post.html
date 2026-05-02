@@ -25,7 +25,7 @@
                             <input type="file" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" id="files" name="files" multiple style="cursor: pointer; z-index: 2;">
                             <i class="bi bi-cloud-arrow-up display-4 text-primary opacity-75 mb-3"></i>
                             <h6 class="fw-bold mb-2">여기를 클릭하여 파일을 추가하세요</h6>
-                            <p class="text-muted small mb-0"><strong class="text-main fw-bold">최대 30개(총 300MB)</strong>까지 첨부 가능</p>
+                            <p class="text-muted small mb-0"><strong class="text-main fw-bold">최대 30개 (대용량 지원)</strong>까지 첨부 가능</p>
                             <div id="fileList" class="mt-3 text-start small text-secondary d-none position-relative" style="z-index: 3;"></div>
                         </div>
                     </div>
@@ -100,26 +100,26 @@ document.getElementById('files').addEventListener('change', function(e) {
     }
 });
 
-// 폼 제출 처리 (비동기 업로드)
-document.getElementById('postForm').addEventListener('submit', function(e) {
+// 폼 제출 처리 (브라우저 직접 업로드 방식)
+document.getElementById('postForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const form = this;
     const fileInput = document.getElementById('files');
+    const files = Array.from(fileInput.files);
     
-    // 파일 개수 체크 (프론트엔드)
-    if (fileInput.files.length > 30) {
+    if (files.length > 30) {
         alert('한 번에 최대 30개의 파일만 업로드할 수 있습니다.');
         return;
     }
     
-    const formData = new FormData(form);
     const submitBtn = document.getElementById('submitBtn');
     const cancelBtn = document.getElementById('cancelBtn');
     const progressContainer = document.getElementById('uploadProgressContainer');
     const progressBar = document.getElementById('progressBar');
     const progressPercent = document.getElementById('uploadPercentage');
     const statusText = document.getElementById('uploadStatusText');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
     // UI 업데이트: 버튼 비활성화 및 프로그레스 바 표시
     submitBtn.disabled = true;
@@ -127,58 +127,106 @@ document.getElementById('postForm').addEventListener('submit', function(e) {
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 처리 중...';
     progressContainer.classList.remove('d-none');
     
-    const xhr = new XMLHttpRequest();
+    const uploadedFilesData = [];
     
-    // 업로드 진행 이벤트
-    xhr.upload.onprogress = function(e) {
-        if (e.lengthComputable) {
-            const percentComplete = Math.round((e.loaded / e.total) * 100);
-            progressBar.style.width = percentComplete + '%';
-            progressBar.setAttribute('aria-valuenow', percentComplete);
-            progressPercent.innerText = percentComplete + '%';
+    try {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            statusText.innerText = `[${i+1}/${files.length}] ${file.name} 준비 중...`;
             
-            if (percentComplete === 100) {
-                statusText.innerText = '서버에서 처리 중... 잠시만 기다려 주세요.';
-                progressBar.classList.add('bg-success');
-            }
+            // 1. 서버를 통해 업로드 세션(Session URI) 생성
+            const initRes = await fetch('/api/upload/init', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ filename: file.name, mimetype: file.type })
+            });
+            const initData = await initRes.json();
+            if (!initData.success) throw new Error(initData.error || '업로드 세션 생성에 실패했습니다.');
+            
+            const uploadUrl = initData.upload_url;
+            
+            // 2. 구글 서버로 직접 파일 조각 전송 (PUT)
+            const fileId = await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', uploadUrl, true);
+                
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const filePercent = Math.round((e.loaded / e.total) * 100);
+                        const overallPercent = Math.round(((i / files.length) * 100) + (filePercent / files.length));
+                        progressBar.style.width = overallPercent + '%';
+                        progressBar.setAttribute('aria-valuenow', overallPercent);
+                        progressPercent.innerText = overallPercent + '%';
+                        statusText.innerText = `[${i+1}/${files.length}] ${file.name} 전송 중... (${filePercent}%)`;
+                    }
+                };
+                
+                xhr.onload = () => {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        // 구글은 업로드 완료 후 파일 메타데이터를 반환함
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response.id);
+                    } else {
+                        reject(new Error(`구글 업로드 오류 (${xhr.status})`));
+                    }
+                };
+                xhr.onerror = () => reject(new Error('네트워크 오류가 발생했습니다.'));
+                xhr.send(file);
+            });
+            
+            // 3. 서버에 업로드 완료 보고 및 공개 권한 설정 요청
+            statusText.innerText = `[${i+1}/${files.length}] 권한 설정 및 정보 확인 중...`;
+            const completeRes = await fetch('/api/upload/complete', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ file_id: fileId })
+            });
+            const completeData = await completeRes.json();
+            if (!completeData.success) throw new Error('파일 완료 처리 중 오류가 발생했습니다.');
+            
+            uploadedFilesData.push(completeData.file);
         }
-    };
-    
-    // 완료 처리
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.success && response.redirect) {
-                    window.location.href = response.redirect;
-                } else {
-                    location.reload(); // 폴백
-                }
-            } catch (err) {
-                window.location.href = '/'; // 기본 이동
-            }
+        
+        // 4. 최종 게시글 정보와 함께 서버에 제출
+        statusText.innerText = '게시글을 저장하는 중입니다...';
+        progressBar.style.width = '100%';
+        progressPercent.innerText = '100%';
+        
+        const formData = new FormData(form);
+        formData.append('uploaded_files', JSON.stringify(uploadedFilesData));
+        // 이미 업로드 완료했으므로 실제 파일 필드는 비움
+        formData.delete('files'); 
+        
+        const finalRes = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        });
+        
+        const finalData = await finalRes.json();
+        if (finalData.success && finalData.redirect) {
+            window.location.href = finalData.redirect;
         } else {
-            alert('게시글 저장 중 오류가 발생했습니다.');
-            submitBtn.disabled = false;
-            cancelBtn.classList.remove('disabled');
-            submitBtn.innerHTML = '<i class="bi bi-send"></i> 게시하기';
-            progressContainer.classList.add('d-none');
+            throw new Error(finalData.error || '게시글 저장에 실패했습니다.');
         }
-    };
-    
-    // 에러 처리
-    xhr.onerror = function() {
-        alert('네트워크 오류가 발생했습니다.');
+        
+    } catch (err) {
+        console.error(err);
+        alert('오류: ' + err.message);
         submitBtn.disabled = false;
         cancelBtn.classList.remove('disabled');
-        submitBtn.innerHTML = '<i class="bi bi-send"></i> 게시하기';
+        submitBtn.innerHTML = '<i class="bi bi-send-fill me-2"></i> 게시글 완성하기';
         progressContainer.classList.add('d-none');
-    };
-    
-    xhr.open('POST', form.action, true);
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    xhr.setRequestHeader('X-CSRFToken', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-    xhr.send(formData);
+    }
 });
 </script>
 {% endblock %}

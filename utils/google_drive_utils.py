@@ -73,45 +73,60 @@ class GoogleDriveManager:
             print(f"파일 검색 오류 ({filename}): {e}")
             return None
 
-    def upload_file(self, file_stream, filename, mimetype):
-        """파일을 구글 드라이브의 지정된 폴더에 업로드하고 정보 반환"""
+    def create_upload_session(self, filename, mimetype):
+        """브라우저 직접 업로드를 위한 구글 드라이브 세션 URI 생성"""
         if not self.service:
-            print("드라이브 서비스가 초기화되지 않았습니다.")
             return None
-
+        
         try:
-            file_metadata = {
+            # 토큰 갱신 확인
+            creds = self.service._http.credentials
+            if creds.expired or not creds.valid:
+                creds.refresh(Request())
+
+            url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable"
+            headers = {
+                "Authorization": f"Bearer {creds.token}",
+                "Content-Type": "application/json; charset=UTF-8",
+                "X-Upload-Content-Type": mimetype
+            }
+            metadata = {
                 'name': filename,
                 'parents': [self.folder_id]
             }
             
-            file_stream.seek(0)
-            media = MediaIoBaseUpload(file_stream, mimetype=mimetype, resumable=True)
+            import requests
+            response = requests.post(url, headers=headers, json=metadata)
+            if response.status_code == 200:
+                return response.headers.get('Location')
+            else:
+                print(f"세션 생성 실패: {response.status_code} {response.text}")
+                return None
+        except Exception as e:
+            print(f"세션 생성 오류: {e}")
+            return None
+
+    def complete_upload(self, file_id):
+        """업로드 완료 후 파일 권한 설정 및 정보 반환"""
+        if not self.service:
+            return None
             
-            # 파일 업로드
-            file = self.service.files().create(
-                body=file_metadata,
-                media_body=media,
-                fields='id, webViewLink, webContentLink'
-            ).execute()
-            
-            file_id = file.get('id')
-            
+        try:
             # 파일을 '링크가 있는 모든 사용자에게 공개'로 설정
             self.service.permissions().create(
                 fileId=file_id,
                 body={'type': 'anyone', 'role': 'reader'}
             ).execute()
             
+            # 최신 정보 가져오기
             file_info = self.service.files().get(
                 fileId=file_id,
                 fields='id, name, webViewLink, webContentLink, thumbnailLink, mimeType, size'
             ).execute()
             
             return file_info
-            
         except Exception as e:
-            print(f"파일 업로드 오류: {e}")
+            print(f"업로드 완료 처리 오류 ({file_id}): {e}")
             return None
 
     def sync_database(self, local_db_path, filename='sns.db'):
