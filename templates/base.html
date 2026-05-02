@@ -299,6 +299,15 @@
                     </form>
                     {% endif %}
                     
+                    <!-- 알림 토글 (모바일에서도 항상 표시) -->
+                    {% if current_user.is_authenticated %}
+                    <div class="d-flex align-items-center ms-auto me-2 d-lg-none">
+                        <button id="push-toggle-btn-mobile" class="btn btn-outline-light btn-sm push-btn-trigger" title="알림 설정">
+                            <i class="bi bi-bell"></i>
+                        </button>
+                    </div>
+                    {% endif %}
+
                     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                         <span class="navbar-toggler-icon"></span>
                     </button>
@@ -333,12 +342,6 @@
                                 <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" title="다크모드 토글">
                                     <i class="bi bi-moon-stars"></i>
                                     <span class="sr-only">다크모드 토글</span>
-                                </button>
-                            </li>
-                            <li class="nav-item ms-lg-2">
-                                <button id="push-toggle-btn" class="btn btn-outline-light btn-sm" title="알림 설정">
-                                    <i class="bi bi-bell"></i>
-                                    <span class="sr-only">알림 설정</span>
                                 </button>
                             </li>
 
@@ -420,19 +423,21 @@
     <script>
         // 푸시 알림 토글 로직
         document.addEventListener('DOMContentLoaded', () => {
-            const pushBtn = document.getElementById('push-toggle-btn');
-            if (!pushBtn) return;
+            const pushBtns = document.querySelectorAll('.push-btn-trigger, #push-toggle-btn');
+            if (pushBtns.length === 0) return;
 
             function updateBtnUI(isSubscribed) {
-                if (isSubscribed) {
-                    pushBtn.classList.replace('btn-outline-primary', 'btn-primary');
-                    pushBtn.innerHTML = '<i class="bi bi-bell-fill"></i>';
-                    pushBtn.title = '알림 끄기';
-                } else {
-                    pushBtn.classList.replace('btn-primary', 'btn-outline-primary');
-                    pushBtn.innerHTML = '<i class="bi bi-bell"></i>';
-                    pushBtn.title = '알림 켜기';
-                }
+                pushBtns.forEach(btn => {
+                    if (isSubscribed) {
+                        btn.classList.replace('btn-outline-light', 'btn-primary');
+                        btn.innerHTML = '<i class="bi bi-bell-fill"></i>';
+                        btn.title = '알림 끄기';
+                    } else {
+                        btn.classList.replace('btn-primary', 'btn-outline-light');
+                        btn.innerHTML = '<i class="bi bi-bell"></i>';
+                        btn.title = '알림 켜기';
+                    }
+                });
             }
 
             // 초기 상태 반영
@@ -440,18 +445,20 @@
                 updateBtnUI(e.detail.isSubscribed);
             });
 
-            pushBtn.addEventListener('click', async () => {
-                if (PushNotifications.isSubscribed) {
-                    await PushNotifications.unsubscribeUser();
-                    SNS.showToast('푸시 알림이 해제되었습니다.', 'info');
-                } else {
-                    const success = await PushNotifications.subscribeUser();
-                    if (success) {
-                        SNS.showToast('푸시 알림이 설정되었습니다!', 'success');
+            pushBtns.forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (PushNotifications.isSubscribed) {
+                        await PushNotifications.unsubscribeUser();
+                        SNS.showToast('푸시 알림이 해제되었습니다.', 'info');
                     } else {
-                        SNS.showToast('알림 설정에 실패했습니다. 브라우저 설정을 확인해주세요.', 'danger');
+                        const success = await PushNotifications.subscribeUser();
+                        if (success) {
+                            SNS.showToast('푸시 알림이 설정되었습니다!', 'success');
+                        } else {
+                            SNS.showToast('알림 설정에 실패했습니다. 브라우저 설정을 확인해주세요.', 'danger');
+                        }
                     }
-                }
+                });
             });
         });
     </script>
