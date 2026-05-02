@@ -71,9 +71,11 @@ def create_app():
     from blueprints.auth import auth_bp
     from blueprints.main import main_bp
     from blueprints.admin import admin_bp
+    from blueprints.push import push_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(push_bp)
 
     # 템플릿 필터
     @app.template_filter('from_json')

@@ -127,6 +127,23 @@ def new_post():
         )
         db.session.add(post)
         db.session.commit()
+
+        # 푸시 알림 전송 (백그라운드)
+        def notify_new_post(post_id, author_id, author_name):
+            from blueprints.push import send_push_to_user
+            from models import User
+            # 자신을 제외한 모든 승인된 사용자에게 알림
+            users = User.query.filter(User.id != author_id, User.is_approved == True).all()
+            for user in users:
+                send_push_to_user(
+                    user, 
+                    title=f"새 게시글: {author_name}", 
+                    body=content[:50] + "..." if len(content) > 50 else content,
+                    url=url_for('main.view_post', post_id=post_id, _external=True)
+                )
+        
+        executor = ThreadPoolExecutor(max_workers=1)
+        executor.submit(notify_new_post, post.id, current_user.id, current_user.username)
         
         flash('게시글이 작성되었습니다!', 'success')
         return jsonify({'success': True, 'redirect': url_for('main.index')}) if request.headers.get('X-Requested-With') == 'XMLHttpRequest' else redirect(url_for('main.index'))
@@ -157,6 +174,23 @@ def add_comment(post_id):
     db.session.add(comment)
     db.session.commit()
     trigger_db_sync()
+
+    # 푸시 알림 전송 (포스트 작성자에게)
+    if post.author_id != current_user.id:
+        def notify_new_comment(author_id, commenter_name, post_id, comment_content):
+            from blueprints.push import send_push_to_user
+            from models import User
+            author = User.query.get(author_id)
+            if author:
+                send_push_to_user(
+                    author,
+                    title=f"새 댓글: {commenter_name}",
+                    body=comment_content[:50] + "..." if len(comment_content) > 50 else comment_content,
+                    url=url_for('main.view_post', post_id=post_id, _external=True)
+                )
+        
+        executor = ThreadPoolExecutor(max_workers=1)
+        executor.submit(notify_new_comment, post.author_id, current_user.username, post.id, content)
     
     flash('댓글이 작성되었습니다!', 'success')
     

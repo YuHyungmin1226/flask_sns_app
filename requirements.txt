@@ -31,3 +31,4 @@ google-auth-oauthlib
 APScheduler==3.10.4
 feedparser==6.0.11
 flask-talisman
+pywebpush

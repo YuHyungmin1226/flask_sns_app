@@ -134,3 +134,9 @@ dmypy.json
 !package.json
 !composer.json
 !metadata.json
+# 가상 환경
+venv/
+
+# VAPID 키 파일
+scripts/*.pem
+!manifest.json
