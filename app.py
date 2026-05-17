@@ -80,10 +80,15 @@ def create_app():
     # 템플릿 필터
     @app.template_filter('from_json')
     def from_json_filter(value):
+        if value is None or value == "":
+            return []
         if isinstance(value, str):
-            try: return json.loads(value)
-            except: return []
-        return value
+            try:
+                data = json.loads(value)
+                return data if data is not None else []
+            except:
+                return []
+        return value if isinstance(value, (list, dict)) else []
 
     @app.template_filter('korean_time')
     def korean_time_filter(dt):

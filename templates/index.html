@@ -57,55 +57,51 @@
 
 {% block scripts %}
 <script>
-    // URL 미리보기 클릭 이벤트
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.url-preview a').forEach(function (link) {
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                window.open(this.href, '_blank');
-            });
-        });
-    });
-
-    // 비디오/오디오 컨트롤 최적화
-    document.addEventListener('DOMContentLoaded', function () {
-        // 비디오 컨트롤
-        document.querySelectorAll('video').forEach(function (video) {
-            video.addEventListener('loadedmetadata', function () {
-                video.controls = true;
-            });
-        });
-
-        // 오디오 컨트롤
-        document.querySelectorAll('audio').forEach(function (audio) {
-            audio.addEventListener('loadedmetadata', function () {
-                audio.controls = true;
-            });
-        });
-    });
-
-    // 무한 스크롤 구현 (Intersection Observer)
+    // 전역 변수 설정
     const trigger = document.getElementById('infinite-scroll-trigger');
-...
     const container = document.getElementById('postContainer');
     const noMore = document.getElementById('no-more-posts');
+    const loadMoreUrl = trigger ? trigger.dataset.loadUrl : '';
     
     let currentPage = 1;
     let isLoading = false;
     let hasNextPage = trigger ? (trigger.dataset.hasNext === 'true') : false;
-    const loadMoreUrl = trigger ? trigger.dataset.loadUrl : '';
 
-    if (trigger && hasNextPage) {
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !isLoading && hasNextPage) {
-                loadMorePosts();
-            }
-        }, { threshold: 0.1 });
+    // 초기화 함수
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. 초기 게시글 삭제 이벤트 바인딩
+        bindDeleteEvents();
 
-        observer.observe(trigger);
-    }
+        // 2. 무한 스크롤 설정
+        if (trigger && hasNextPage) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !isLoading && hasNextPage) {
+                        loadMorePosts();
+                    }
+                });
+            }, { threshold: 0.1 });
+            observer.observe(trigger);
+        }
+
+        // 3. URL 미리보기 클릭 이벤트 (이벤트 위임 사용)
+        if (container) {
+            container.addEventListener('click', function(e) {
+                const link = e.target.closest('.url-preview a');
+                if (link) {
+                    e.preventDefault();
+                    window.open(link.href, '_blank');
+                }
+            });
+        }
+
+        // 4. 비디오/오디오 컨트롤 최적화
+        initMediaControls();
+    });
 
     function loadMorePosts() {
+        if (isLoading || !hasNextPage) return;
+        
         isLoading = true;
         currentPage++;
         
@@ -115,27 +111,29 @@
         .then(response => response.json())
         .then(data => {
             isLoading = false;
-            if (data.html) {
+            
+            // 데이터가 있으면 추가
+            if (data.html && data.html.trim() !== "") {
                 container.insertAdjacentHTML('beforeend', data.html);
-                hasNextPage = data.has_next;
-                
-                if (!hasNextPage) {
-                    trigger.classList.add('d-none');
-                    noMore.classList.remove('d-none');
-                }
-
-                // 새로 추가된 게시글의 삭제 폼 이벤트 바인딩 호출
-                bindDeleteEvents();
+                bindDeleteEvents(); // 새 게시글에 이벤트 바인딩
+                initMediaControls(); // 새 미디어 요소 초기화
+            }
+            
+            // 다음 페이지 상태 업데이트 (항상 수행)
+            hasNextPage = data.has_next;
+            if (!hasNextPage && trigger) {
+                trigger.classList.add('d-none');
+                if (noMore) noMore.classList.remove('d-none');
             }
         })
         .catch(error => {
             isLoading = false;
+            currentPage--; // 실패 시 페이지 번호 복구
             console.error('Error loading posts:', error);
         });
     }
 
     function bindDeleteEvents() {
-        // 기존 및 새로 추가된 폼 모두 바인딩 (중복 방지 로직 필요시 추가)
         document.querySelectorAll('.delete-post-form:not([data-bound])').forEach(form => {
             form.setAttribute('data-bound', 'true');
             form.addEventListener('submit', function(e) {
@@ -159,14 +157,19 @@
                         card.style.transform = 'translateY(20px)';
                         setTimeout(() => {
                             card.remove();
-                            SNS.showToast(data.message, 'success');
+                            if (window.SNS) SNS.showToast(data.message, 'success');
                         }, 500);
                     } else {
-                        SNS.showToast(data.message || '오류가 발생했습니다.', 'error');
+                        if (window.SNS) SNS.showToast(data.message || '오류가 발생했습니다.', 'error');
                     }
                 });
             });
         });
+    }
+
+    function initMediaControls() {
+        document.querySelectorAll('video').forEach(v => v.controls = true);
+        document.querySelectorAll('audio').forEach(a => a.controls = true);
     }
 </script>
 {% endblock %}

@@ -130,18 +130,21 @@ def new_post():
 
         # 푸시 알림 전송 (백그라운드)
         def notify_new_post(post_id, author_id, author_name):
-            from blueprints.push import send_push_to_user
-            from models import User
-            # 자신을 제외한 모든 승인된 사용자에게 알림
-            users = User.query.filter(User.id != author_id, User.is_approved == True).all()
-            for user in users:
-                send_push_to_user(
-                    user, 
-                    title=f"새 게시글: {author_name}", 
-                    body=content[:50] + "..." if len(content) > 50 else content,
-                    url=url_for('main.view_post', post_id=post_id, _external=True)
-                )
+            from flask import current_app
+            with current_app.app_context():
+                from blueprints.push import send_push_to_user
+                from models import User
+                # 자신을 제외한 모든 승인된 사용자에게 알림
+                users = User.query.filter(User.id != author_id, User.is_approved == True).all()
+                for user in users:
+                    send_push_to_user(
+                        user, 
+                        title=f"새 게시글: {author_name}", 
+                        body=content[:50] + "..." if len(content) > 50 else content,
+                        url=url_for('main.view_post', post_id=post_id, _external=True)
+                    )
         
+        from flask import current_app
         executor = ThreadPoolExecutor(max_workers=1)
         executor.submit(notify_new_post, post.id, current_user.id, current_user.username)
         
