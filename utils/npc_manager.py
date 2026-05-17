@@ -11,12 +11,12 @@ from utils.tasks import trigger_db_sync # DB 동기화 임포트
 url_preview_generator = URLPreviewGenerator()
 
 def get_next_delay(activity_level):
-    """활동 지수에 따른 다음 활동 대기 시간(분) 계산 (최적화)"""
-    # 활동 지수 1~10에 따라 대기 시간을 대폭 단축 (생동감 부여)
-    # 10일 때 평균 40분, 1일 때 평균 400분(약 6시간) 대기하도록 설정
-    base_minutes = (11 - activity_level) * 40
+    """활동 지수에 따른 다음 활동 대기 시간(분) 계산 (생동감 극대화)"""
+    # 활동 지수 1~10에 따라 대기 시간을 매우 짧게 조정
+    # 10일 때 평균 10분, 1일 때 평균 100분 대기하도록 설정
+    base_minutes = (11 - activity_level) * 10
     jitter = random.uniform(0.5, 1.5)
-    return max(10, int(base_minutes * jitter)) # 최소 10분은 대기
+    return max(5, int(base_minutes * jitter)) # 최소 5분은 대기
 
 def run_npc_cycle(app):
     """전체 NPC 활동 사이클 실행 (스케줄러에 의해 호출됨)"""
@@ -27,37 +27,37 @@ def run_npc_cycle(app):
             return
 
         now = get_korean_time_for_db()
-        print(f"[NPC Heartbeat] Cycle started at {now}")
         
+        # 1. 취침 시간 확인 (02시~07시 사이엔 활동 확률 극감)
+        if 2 <= now.hour <= 7:
+            if random.random() > 0.05: # 5% 확률로만 활동
+                return
+
         # 날씨 데이터 가져오기 (메모리 반영용)
         weather_setting = SystemSetting.query.get('current_weather')
         weather_data = json.loads(weather_setting.value) if weather_setting else None
 
-        # 1. 취침 시간 확인 (02시~07시 사이엔 활동 확률 극감)
-        if 2 <= now.hour <= 7:
-            if random.random() > 0.05: # 5% 확률로만 활동
-                print("[NPC Heartbeat] Silent night... (sleeping)")
-                return
+        # 모든 NPC 정보 가져오기
+        npcs = User.query.join(NpcProfile).filter(User.is_npc == True).all()
+        
+        print(f"[NPC Heartbeat] Checking {len(npcs)} NPCs at {now}")
 
         # 2. 활동 예정 시간이 된 NPC 찾기 (게시글 작성)
-        # NpcProfile.next_action_at이 None이거나 현재 시간 이전인 경우
-        npcs_to_post = User.query.join(NpcProfile).filter(
-            User.is_npc == True,
-            (NpcProfile.next_action_at == None) | (NpcProfile.next_action_at <= now)
-        ).all()
-
-        if npcs_to_post:
-            print(f"[NPC Heartbeat] {len(npcs_to_post)} NPCs are ready to post.")
-            for npc in npcs_to_post:
+        for npc in npcs:
+            p = npc.npc_profile
+            # 예정 시간이 지났거나 아직 설정되지 않은 경우
+            if not p.next_action_at or p.next_action_at <= now:
+                print(f"[NPC Heartbeat] {npc.username} is triggered (Scheduled: {p.next_action_at})")
                 try:
                     execute_npc_post(npc, weather_data)
                 except Exception as e:
                     print(f"NPC Post Error ({npc.username}): {e}")
-        else:
-            print("[NPC Heartbeat] No NPCs are scheduled to post yet.")
+            else:
+                diff = (p.next_action_at - now).total_seconds() / 60
+                print(f"[NPC Heartbeat] {npc.username} is waiting ({int(diff)} mins left)")
 
         # 3. 새로운 게시글에 대한 무작위 댓글 반응
-        # 최근 15분 이내의 글 조회 (너무 길면 부하 발생)
+        # 최근 15분 이내의 글 조회
         recent_posts = Post.query.filter(
             Post.created_at >= now - timedelta(minutes=15)
         ).all()
