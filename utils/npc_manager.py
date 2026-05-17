@@ -63,11 +63,14 @@ def run_npc_cycle(app):
         ).all()
         
         if recent_posts:
-            # 모든 NPC 정보 미리 가져오기 (쿼리 최적화)
+            # 쿼리 최적화: NPC 목록 및 작성자 정보 미리 로드
             potential_commenters = User.query.filter(User.is_npc == True).all()
+            author_ids = list(set([p.author_id for p in recent_posts]))
+            authors = {u.id: u for u in User.query.filter(User.id.in_(author_ids)).all()}
             
             for post in recent_posts:
-                author_is_npc = User.query.get(post.author_id).is_npc
+                author = authors.get(post.author_id)
+                if not author: continue
                 
                 for npc in potential_commenters:
                     if npc.id == post.author_id: continue
@@ -81,7 +84,7 @@ def run_npc_cycle(app):
                     affinity = rel.affinity if rel else 0
                     
                     # 반응 확률 (유저 글은 40%, NPC 글은 5% + 친밀도 보너스)
-                    base_chance = 0.4 if not author_is_npc else 0.05
+                    base_chance = 0.4 if not author.is_npc else 0.05
                     bonus_chance = min(affinity * 0.01, 0.2)
                     
                     if random.random() < (base_chance + bonus_chance):

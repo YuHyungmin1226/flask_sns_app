@@ -133,20 +133,27 @@ def fetch_random_image(keyword="nature"):
     return f"https://loremflickr.com/1200/800/{keyword}"
 
 def fetch_news_rss():
-    """RSS 피드에서 최신 뉴스 하나 가져오기"""
+    """RSS 피드에서 최신 뉴스 하나 가져오기 (예외 처리 강화)"""
     import feedparser
     feed_info = random.choice(RSS_FEEDS)
     try:
+        # 5초 타임아웃 적용 (feedparser는 내부적으로 지원하지 않으므로 requests와 조합 권장되나 여기선 단순화)
         feed = feedparser.parse(feed_info['url'])
         if feed.entries:
             entry = random.choice(feed.entries[:5])
+            title = entry.get('title', '새로운 소식')
+            link = entry.get('link', '#')
+            summary = entry.get('summary', '') or entry.get('description', '')
+            summary_clean = summary[:100] + "..." if len(summary) > 100 else summary
+            
             return {
-                "title": entry.title,
-                "link": entry.link,
-                "summary": entry.summary[:100] + "...",
+                "title": title,
+                "link": link,
+                "summary": summary_clean,
                 "category": feed_info['name']
             }
-    except: return None
+    except Exception as e:
+        print(f"RSS Fetch Error: {e}")
     return None
 
 def fetch_finance_rss():
