@@ -3,58 +3,58 @@ import json
 import requests
 from datetime import datetime
 
-# 일상 대화 템플릿 (비용 0원 로컬 데이터)
-DAILY_POSTS = [
-    "오늘 점심은 뭐 먹지? 고민되네.. 😋",
-    "날씨가 너무 좋아서 산책 나왔어요. 기분이 상쾌하네요!",
-    "요즘 읽고 있는 책이 너무 재미있어서 시간 가는 줄 모르겠어요. 📚",
-    "커피 한 잔의 여유... 이게 바로 행복이죠. ☕",
-    "갑자기 비가 오네요? 다들 우산 챙기셨나요?",
-    "운동 끝나고 마시는 시원한 물 한 잔! 최고예요. 💪",
-    "오늘 하늘이 유난히 파랗고 예쁘네요. 사진 한 장 찍어봤어요.",
-    "월요일이라 조금 피곤하지만, 다들 이번 주도 화이팅해요! 🙌",
-    "좋은 음악을 들으며 퇴근하는 길, 오늘 하루도 수고 많으셨습니다.",
-    "드디어 기다리던 주말이 왔네요! 다들 뭐 하실 계획인가요?",
-    "새로 생긴 카페에 왔는데 인테리어가 너무 제 취향이에요. ✨",
-    "넷플릭스에서 재미있는 영화 추천해주세요! 볼 게 없네요.",
-    "직접 만든 파스타! 생각보다 맛있어서 놀랐어요. 🍝",
-    "밤공기가 참 차분하고 좋네요. 잠이 잘 올 것 같아요. 🌙",
-    "오늘 하루는 정말 바빴지만 보람차네요."
-]
-
-# 댓글 리액션 템플릿
-REACTIONS = {
-    "positive": [
-        "와, 정말 좋네요! 👍",
-        "공감합니다. 저도 그렇게 생각해요.",
-        "사진 너무 예뻐요! 어디인가요?",
-        "우와, 대단하시네요! 부러워요. 😊",
-        "좋은 정보 감사합니다!",
-        "오늘도 즐거운 하루 보내세요!",
-        "멋져요! 저도 한번 해보고 싶네요."
-    ],
-    "neutral": [
-        "그렇군요!",
-        "오호, 신기하네요.",
-        "잘 보고 갑니다.",
-        "좋은 하루 되세요~",
-        "공유해주셔서 감사합니다."
-    ],
-    "question": [
-        "오, 진짜요? 더 자세히 알려주실 수 있나요?",
-        "그거 어디서 사셨어요? 정보 좀 주세요! 🙏",
-        "어떤 점이 좋았는지 궁금해요!",
-        "추천하시는 이유가 있나요?"
-    ]
+# 페르소나별 문장 조각 데이터
+PERSONA_DATA = {
+    "friendly": {
+        "openings": ["안녕하세요! ", "반가워요 여러분, ", "오늘 하루 잘 보내고 계신가요? ", "다들 평안한 하루 되시길 바랄게요. ", "잠시 안부 전하러 왔어요. "],
+        "bodies": [
+            "맛있는 점심을 먹었더니 기분이 참 좋네요. 😊",
+            "요즘 날씨가 변덕스러운데 감기 조심하세요!",
+            "좋은 음악을 듣고 있으니 마음이 여유로워지네요.",
+            "새로운 취미를 시작해볼까 고민 중인데 추천해주실 만한 게 있을까요?",
+            "길을 걷다 예쁜 꽃을 발견해서 기분이 좋아졌어요."
+        ],
+        "closings": ["행복한 하루 되세요!", "다음에 또 이야기 나눠요. ✨", "오늘도 화이팅입니다!", "모두들 즐거운 시간 보내시길!"]
+    },
+    "casual": {
+        "openings": ["다들 뭐해? ㅋㅋ ", "오랜만! ", "방가방가~ ", "와 오늘 대박이다.. ", "안녕안녕! "],
+        "bodies": [
+            "오늘 점심 메뉴 대실패함.. ㅠㅠ 맛집 추천 좀 해주라.",
+            "진짜 퇴근하고 싶어서 미칠 것 같아! ㅋㅋㅋ",
+            "넷플릭스에 새로 올라온 거 봤어? 진짜 존잼임.",
+            "주말 순삭 실화냐.. 월요일 오지 마라 제발.",
+            "갑자기 떡볶이 땡기는데 같이 먹을 사람?"
+        ],
+        "closings": ["이따가 또 올게!", "다들 불금 보내라구 🔥", "그럼 이만 뿅!", "나중에 또 봐~"]
+    },
+    "serious": {
+        "openings": ["안녕하십니까. ", "반갑습니다. 인사가 늦었습니다. ", "좋은 소식이 있어 공유드리고자 합니다. ", "삶의 가치에 대해 생각해보게 되는 날입니다. "],
+        "bodies": [
+            "독서는 마음의 양식이라더니, 최근 읽은 서적이 깊은 울림을 줍니다.",
+            "꾸준한 운동은 몸과 마음을 건강하게 만드는 지름길인 것 같습니다.",
+            "성실하게 하루를 보낸 스스로에게 작은 보상을 주려 합니다.",
+            "함께하는 삶의 소중함을 다시금 깨닫는 요즈음입니다.",
+            "전문성을 높이기 위해 매일 조금씩이라도 공부하는 습관을 들이고 있습니다."
+        ],
+        "closings": ["평안한 시간 되시길 바랍니다.", "이상입니다. 감사합니다.", "오늘도 정진하시길 바랍니다.", "건강 유의하십시오."]
+    },
+    "emotional": {
+        "openings": ["비가 오면 생각이 많아져요.. ", "오늘 노을이 참 예쁘네요. ", "창밖을 보다가 문득.. ", "어디선가 그리운 향기가 나요. "],
+        "bodies": [
+            "시간이 흐르는 게 가끔은 무겁게 느껴지기도 합니다.",
+            "소소한 일상 속에서 나만의 조각을 찾아가는 중이에요.",
+            "따뜻한 라떼 한 잔에 담긴 온기가 마음을 녹여주네요. ☕",
+            "때로는 멈춰 서서 뒤를 돌아보는 시간도 필요한 것 같아요.",
+            "별이 빛나는 밤, 당신의 하루는 어떠셨나요?"
+        ],
+        "closings": ["부디 따뜻한 밤 되기를..", "마음 깊이 응원합니다.", "소중한 순간들을 기록해보세요.", "내일은 더 빛날 거예요."]
+    }
 }
 
-# 뉴스 RSS 피드 목록 (무료)
-RSS_FEEDS = [
-    {"name": "IT/과학", "url": "https://www.yonhapnewstv.co.kr/category/news/it/feed/"},
-    {"name": "생활/문화", "url": "https://www.yonhapnewstv.co.kr/category/news/culture/feed/"}
-]
+# 추임새 (Filler words)
+FILLERS = ["아! ", "와~ ", "음.. ", "헉! ", "허허, ", "그나저나 ", "문득 "]
 
-# 키워드 기반 맞춤 리액션 (비용 0원)
+# 키워드 기반 맞춤 리액션
 KEYWORD_REACTIONS = {
     "비": ["비 오니까 파전에 막걸리 생각나네요! ☔", "비 소리가 참 좋네요. 다들 우산 챙기셨죠?", "축축하지만 감성적인 날이에요."],
     "커피": ["저도 커피 한 잔 마셔야겠어요! ☕", "커피 향이 여기까지 나는 것 같아요.", "역시 오후엔 카페인 수급이 필요하죠!"],
@@ -65,29 +65,41 @@ KEYWORD_REACTIONS = {
     "여행": ["와, 여행 가고 싶어지네요 ✈️", "사진 보니까 힐링돼요. 조심히 다녀오세요!", "어디인지 정보 좀 주실 수 있나요?"]
 }
 
-# 시간대별 특화 게시글
-TIME_BASED_POSTS = {
-    "morning": ["좋은 아침이에요! 다들 오늘 하루도 힘차게 시작해봐요 ☀️", "아침 공기가 상쾌하네요. 기분 좋은 하루 되세요!", "벌써 아침이라니.. 졸리지만 화이팅!"],
-    "lunch": ["슬슬 배고파지네요. 다들 점심 메뉴 정하셨나요? 🍱", "맛점하세요! 저는 오늘 제육볶음 먹으려구요.", "점심 먹고 나른한 오후네요. 커피 한 잔 어떠세요?"],
-    "evening": ["오늘 하루도 수고 많으셨습니다. 편안한 저녁 되세요 🌙", "저녁 노을이 예쁘네요. 다들 맛있는 거 드세요!", "드디어 퇴근! 오늘 하루 어떠셨나요?"],
-    "night": ["밤이 깊었네요. 다들 좋은 꿈 꾸세요 ✨", "조용한 밤공기가 참 좋네요. 잠이 잘 올 것 같아요.", "아직 안 주무시는 분 계신가요? 저는 이제 자러 갑니다."]
+# 날씨별 감성 템플릿
+WEATHER_POSTS = {
+    "Rain": ["비가 주룩주룩 오네요. 파전에 막걸리 딱인 날씨! ☔", "빗소리 들으면서 책 읽으니까 너무 좋아요.", "오늘 같이 비 오는 날은 집에서 영화 보는 게 최고죠."],
+    "Clear": ["오늘 날씨 실화인가요? 하늘이 너무 맑아요! ☀️", "햇살이 따사로워서 광합성 하러 나왔습니다.", "구름 한 점 없는 파란 하늘, 기분까지 좋아지네요."],
+    "Clouds": ["구름이 많아서 흐릿한 날이네요. 그래도 운치 있어요.", "금방이라도 비가 올 것 같은 날씨.. 다들 우산 챙기셨죠?", "흐린 날엔 따뜻한 라떼 한 잔이 생각나요. ☕"],
+    "Snow": ["와! 눈이 와요! 세상이 온통 하얗네요 ❄️", "첫눈인가요? 다들 눈 구경하고 계신가요?", "미끄러우니까 길 조심하세요!"]
 }
 
-def get_random_daily_post():
-    """무작위 일상 글 반환 (시간대 고려)"""
-    now = datetime.now()
-    if 6 <= now.hour < 11:
-        pool = DAILY_POSTS + TIME_BASED_POSTS["morning"]
-    elif 11 <= now.hour < 14:
-        pool = DAILY_POSTS + TIME_BASED_POSTS["lunch"]
-    elif 17 <= now.hour < 21:
-        pool = DAILY_POSTS + TIME_BASED_POSTS["evening"]
-    elif 21 <= now.hour <= 23 or 0 <= now.hour < 2:
-        pool = DAILY_POSTS + TIME_BASED_POSTS["night"]
-    else:
-        pool = DAILY_POSTS
+# 경제/금융 RSS 피드
+FINANCE_FEEDS = [
+    {"name": "증시/금융", "url": "https://www.yonhapnewstv.co.kr/category/news/economy/feed/"}
+]
+
+# 일반 뉴스 RSS 피드
+RSS_FEEDS = [
+    {"name": "IT/과학", "url": "https://www.yonhapnewstv.co.kr/category/news/it/feed/"},
+    {"name": "생활/문화", "url": "https://www.yonhapnewstv.co.kr/category/news/culture/feed/"}
+]
+
+def generate_sentence(personality='friendly'):
+    """페르소나에 맞춰 문장을 조립합니다."""
+    data = PERSONA_DATA.get(personality, PERSONA_DATA['friendly'])
     
-    return random.choice(pool)
+    opening = random.choice(data['openings'])
+    body = random.choice(data['bodies'])
+    closing = random.choice(data['closings'])
+    
+    # 30% 확률로 추임새 추가
+    filler = random.choice(FILLERS) if random.random() < 0.3 else ""
+    
+    return f"{filler}{opening}{body} {closing}"
+
+def get_random_daily_post(personality='friendly'):
+    """무작위 일상 글 생성"""
+    return generate_sentence(personality)
 
 def get_random_reaction(content="", personality='friendly'):
     """콘텐츠 키워드 분석 및 성격에 따른 무작위 댓글 반환"""
@@ -97,44 +109,30 @@ def get_random_reaction(content="", personality='friendly'):
             if keyword in content:
                 return random.choice(reactions)
 
-    # 2. 일반 리액션 (Fallback)
-    category = random.choice(["positive", "positive", "neutral", "question"])
-    return random.choice(REACTIONS[category])
+    # 2. 일반 리액션 (페르소나 반영)
+    data = PERSONA_DATA.get(personality, PERSONA_DATA['friendly'])
+    return random.choice(data['closings']) # 짧은 인사말로 대체
 
 def fetch_random_image(keyword="nature"):
-    """LoremFlickr를 통한 무작위 이미지 URL 획득 (비용 0원, 키 불필요)"""
-    # Source Unsplash가 중단됨에 따라 더 안정적인 LoremFlickr로 교체
+    """LoremFlickr를 통한 무작위 이미지 URL 획득"""
     return f"https://loremflickr.com/1200/800/{keyword}"
 
 def fetch_news_rss():
-    """RSS 피드에서 최신 뉴스 하나 가져오기 (비용 0원)"""
+    """RSS 피드에서 최신 뉴스 하나 가져오기"""
     import feedparser
     feed_info = random.choice(RSS_FEEDS)
     try:
         feed = feedparser.parse(feed_info['url'])
         if feed.entries:
-            entry = random.choice(feed.entries[:5]) # 최신 5개 중 랜덤
+            entry = random.choice(feed.entries[:5])
             return {
                 "title": entry.title,
                 "link": entry.link,
                 "summary": entry.summary[:100] + "...",
                 "category": feed_info['name']
             }
-    except Exception as e:
-        print(f"RSS Fetch Error: {e}")
+    except: return None
     return None
-# 금융/경제 RSS
-FINANCE_FEEDS = [
-    {"name": "증시/금융", "url": "https://www.yonhapnewstv.co.kr/category/news/economy/feed/"}
-]
-
-# 날씨별 감성 템플릿
-WEATHER_POSTS = {
-    "Rain": ["비가 주룩주룩 오네요. 파전에 막걸리 딱인 날씨! ☔", "빗소리 들으면서 책 읽으니까 너무 좋아요.", "오늘 같이 비 오는 날은 집에서 영화 보는 게 최고죠."],
-    "Clear": ["오늘 날씨 실화인가요? 하늘이 너무 맑아요! ☀️", "햇살이 따사로워서 광합성 하러 나왔습니다.", "구름 한 점 없는 파란 하늘, 기분까지 좋아지네요."],
-    "Clouds": ["구름이 많아서 흐릿한 날이네요. 그래도 운치 있어요.", "금방이라도 비가 올 것 같은 날씨.. 다들 우산 챙기셨죠?", "흐린 날엔 따뜻한 라떼 한 잔이 생각나요. ☕"],
-    "Snow": ["와! 눈이 와요! 세상이 온통 하얗네요 ❄️", "첫눈인가요? 다들 눈 구경하고 계신가요?", "미끄러우니까 길 조심하세요!"]
-}
 
 def fetch_finance_rss():
     """경제 뉴스 가져오기"""
@@ -148,7 +146,9 @@ def fetch_finance_rss():
     return None
 
 def generate_npc_post(npc_profile, weather_data=None):
-    """NPC 프로필 및 외부 환경(날씨 등)에 따른 게시글 생성 로직"""
+    """NPC 프로필 및 외부 환경에 따른 게시글 생성"""
+    personality = npc_profile.personality or 'friendly'
+    
     # 1. 날씨 기반 포스팅 (확률적)
     if weather_data and random.random() < 0.3:
         main_weather = weather_data.get('weather', [{}])[0].get('main', 'Clear')
@@ -166,13 +166,12 @@ def generate_npc_post(npc_profile, weather_data=None):
         news = fetch_news_rss()
         if news:
             content = f"[{news['category']}] {news['title']}\n\n{news['summary']}\n\n상세보기: {news['link']}"
-            return content, [] # URL previews will handle the link
+            return content, []
             
     if post_type == "image":
         topic = random.choice(json.loads(npc_profile.preferred_topics or '["nature", "food", "travel"]'))
         image_url = fetch_random_image(topic)
         
-        # 주제에 맞는 문구 선택
         if topic in ['food', 'cooking', 'cafe']:
             caption = random.choice(["오늘 정말 맛있게 먹은 메뉴예요! 😋", "취향 저격 맛집/카페 발견! 사진 공유합니다.", "보기만 해도 배부른 비주얼이네요!"])
         elif topic in ['nature', 'travel', 'hiking']:
@@ -182,4 +181,4 @@ def generate_npc_post(npc_profile, weather_data=None):
             
         return caption + f"\n\n{image_url}", []
 
-    return get_random_daily_post(), []
+    return get_random_daily_post(personality), []
