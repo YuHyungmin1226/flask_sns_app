@@ -101,6 +101,20 @@ def create_app():
 
     # 데이터베이스 초기화
     with app.app_context():
+        # 1. 누락된 컬럼 자동 패치 (마이그레이션 도구 대용)
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            columns = [c['name'] for c in inspector.get_columns('user')]
+            if 'is_npc' not in columns:
+                print("[Patch] user 테이블에 is_npc 컬럼이 누락되어 추가합니다.")
+                db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN is_npc BOOLEAN DEFAULT FALSE'))
+                db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Patch Error] 데이터베이스 패치 중 오류 발생: {e}")
+
+        # 2. 테이블 생성 및 초기화
         db.create_all()
         from werkzeug.security import generate_password_hash
         from utils.npc_manager import init_npcs # NPC 초기화 임포트
