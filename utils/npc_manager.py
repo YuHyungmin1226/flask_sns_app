@@ -27,6 +27,10 @@ def run_npc_cycle(app):
 
         now = get_korean_time_for_db()
         
+        # 날씨 데이터 가져오기 (메모리 반영용)
+        weather_setting = SystemSetting.query.get('current_weather')
+        weather_data = json.loads(weather_setting.value) if weather_setting else None
+
         # 1. 취침 시간 확인 (02시~07시 사이엔 활동 확률 극감)
         if 2 <= now.hour <= 7:
             if random.random() > 0.05: # 5% 확률로만 활동
@@ -40,33 +44,42 @@ def run_npc_cycle(app):
 
         for npc in npcs_to_post:
             try:
-                execute_npc_post(npc)
+                execute_npc_post(npc, weather_data)
             except Exception as e:
                 print(f"NPC Post Error ({npc.username}): {e}")
 
         # 3. 새로운 게시글에 대한 무작위 댓글 반응
-        # 최근 30분 이내의 글 중 NPC가 아직 댓글 달지 않은 글 선정
         recent_posts = Post.query.filter(
             Post.created_at >= now - timedelta(minutes=30)
         ).all()
         
         for post in recent_posts:
-            # 1. 대상에 따른 반응 확률 차등 (실제 유저에게 더 활발히 반응)
+            # 대상에 따른 반응 확률 차등 + 친밀도 기반 가중치
             author = User.query.get(post.author_id)
-            reaction_chance = 0.3 if not author.is_npc else 0.1 # 유저는 30%, NPC는 10% 확률
             
-            if random.random() < reaction_chance:
-                # 이 글에 댓글 달지 않은 NPC 무작위 선택
-                npc_commenter = User.query.filter(User.is_npc == True).order_by(db.func.random()).first()
-                if npc_commenter and npc_commenter.id != post.author_id:
-                    # 이미 댓글 달았는지 확인
-                    existing = Comment.query.filter_by(author_id=npc_commenter.id, post_id=post.id).first()
-                    if not existing:
-                        execute_npc_comment(npc_commenter, post)
+            # 모든 NPC에 대해 이 게시글에 대한 친밀도 확인
+            potential_commenters = User.query.filter(User.is_npc == True).all()
+            for npc in potential_commenters:
+                if npc.id == post.author_id: continue
+                
+                # 이미 댓글 달았는지 확인
+                existing = Comment.query.filter_by(author_id=npc.id, post_id=post.id).first()
+                if existing: continue
 
-def execute_npc_post(npc):
+                # 친밀도 점수 가져오기
+                rel = NpcRelationship.query.filter_by(npc_id=npc.id, target_id=post.author_id).first()
+                affinity = rel.affinity if rel else 0
+                
+                # 반응 확률 계산 (기본 10~30% + 친밀도 보너스 최대 20%)
+                base_chance = 0.3 if not author.is_npc else 0.1
+                bonus_chance = min(affinity * 0.01, 0.2)
+                
+                if random.random() < (base_chance + bonus_chance):
+                    execute_npc_comment(npc, post)
+
+def execute_npc_post(npc, weather_data=None):
     """실제 게시글 작성 및 다음 시간 예약"""
-    content, files = generate_npc_post(npc.npc_profile)
+    content, files = generate_npc_post(npc.npc_profile, weather_data)
     
     # URL 미리보기 추출
     _, previews = url_preview_generator.process_text_with_urls(content)
@@ -75,9 +88,14 @@ def execute_npc_post(npc):
         content=content,
         author_id=npc.id,
         is_public=True,
-        url_previews=json.dumps(previews)
+        url_previews=json.dumps(previews, ensure_ascii=False)
     )
     db.session.add(new_post)
+    
+    # 메모리 업데이트 (최근 활동 저장)
+    mem = json.loads(npc.npc_profile.memory or '{}')
+    mem['last_post_type'] = 'daily' # 단순화
+    npc.npc_profile.memory = json.dumps(mem)
     
     # 다음 활동 시간 예약
     delay = get_next_delay(npc.npc_profile.activity_level)
@@ -88,7 +106,7 @@ def execute_npc_post(npc):
     print(f"[NPC Activity] {npc.username} posted content. Next action in {delay} mins.")
 
 def execute_npc_comment(npc, post):
-    """무작위 지연 후 댓글 작성 시뮬레이션 (맥락 인지형)"""
+    """무작위 지연 후 댓글 작성 시뮬레이션 (친밀도 반영)"""
     reaction = get_random_reaction(post.content, npc.npc_profile.personality)
     
     new_comment = Comment(
@@ -98,8 +116,18 @@ def execute_npc_comment(npc, post):
     )
     db.session.add(new_comment)
     npc.npc_profile.last_comment_at = get_korean_time_for_db()
+    
+    # 친밀도 상승 로직
+    rel = NpcRelationship.query.filter_by(npc_id=npc.id, target_id=post.author_id).first()
+    if not rel:
+        rel = NpcRelationship(npc_id=npc.id, target_id=post.author_id, affinity=0)
+        db.session.add(rel)
+    rel.affinity += 5 # 인터랙션 한 번에 친밀도 5점 상승
+    rel.last_interaction = get_korean_time_for_db()
+    
     db.session.commit()
-    print(f"[NPC Activity] {npc.username} commented on post {post.id}.")
+    print(f"[NPC Activity] {npc.username} commented on post {post.id}. Affinity with user {post.author_id}: {rel.affinity}")
+
 
 def init_npcs():
     """기본 NPC 계정들 생성 및 초기화"""

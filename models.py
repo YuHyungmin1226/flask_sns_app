@@ -27,6 +27,14 @@ class NpcProfile(db.Model):
     last_post_at = db.Column(db.DateTime)
     last_comment_at = db.Column(db.DateTime)
     next_action_at = db.Column(db.DateTime)  # 다음 무작위 활동 예정 시간
+    memory = db.Column(db.Text, default='{}')  # NPC의 현재 상태, 기억 (JSON)
+
+class NpcRelationship(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    npc_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    target_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    affinity = db.Column(db.Integer, default=0)  # 친밀도 (댓글, 반응 시 상승)
+    last_interaction = db.Column(db.DateTime, default=get_korean_time_for_db)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)

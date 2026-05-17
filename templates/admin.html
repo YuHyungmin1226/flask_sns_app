@@ -112,6 +112,45 @@
                 </div>
                 {% endif %}
 
+                <!-- NPC 관리 섹션 -->
+                <div class="mb-5">
+                    <h5 class="fw-bold mb-4"><i class="bi bi-cpu me-2"></i> NPC 페르소나 관리</h5>
+                    <div class="table-responsive rounded-4 border border-light overflow-hidden">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">NPC명</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">성격 / 활동지수</th>
+                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase text-end">고급 제어</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users if user.is_npc %}
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="fw-bold text-primary">{{ user.username }}</div>
+                                        <div class="small text-muted">친밀도 데이터: {{ user.id }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="badge bg-info bg-opacity-10 text-info">{{ user.npc_profile.personality }}</span>
+                                        <span class="badge bg-light text-dark">Lv.{{ user.npc_profile.activity_level }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <form method="POST" action="{{ url_for('admin.force_npc_post', npc_id=user.id) }}">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary" title="지금 즉시 글 작성">강제 활동</button>
+                                            </form>
+                                            <button type="button" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#possessionModal" data-npc-id="{{ user.id }}" data-npc-name="{{ user.username }}">빙의</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- 사용자 관리 상세 -->
                 <div class="mb-5">
                     <h5 class="fw-bold mb-4"><i class="bi bi-people me-2"></i> 사용자 관리</h5>
@@ -198,11 +237,47 @@
         </div>
     </div>
 </div>
+
+<!-- 빙의(NPC로 게시하기) 모달 -->
+<div class="modal fade" id="possessionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4 border-0">
+            <form action="{{ url_for('admin.post_as_npc') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="npc_id" id="modalNpcId">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="fw-bold"><i class="bi bi-magic me-2"></i><span id="modalNpcName"></span> 계정으로 게시</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control bg-light border-0" name="content" rows="5" placeholder="NPC의 말투로 내용을 입력하세요..." required></textarea>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-dark px-4">게시하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 빙의 모달 데이터 전달
+    const possessionModal = document.getElementById('possessionModal');
+    if (possessionModal) {
+        possessionModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const npcId = button.getAttribute('data-npc-id');
+            const npcName = button.getAttribute('data-npc-name');
+            document.getElementById('modalNpcId').value = npcId;
+            document.getElementById('modalNpcName').textContent = npcName;
+        });
+    }
+...
     const weatherBotToggle = document.getElementById('weatherBotToggle');
     if(weatherBotToggle) {
         weatherBotToggle.addEventListener('change', function() {

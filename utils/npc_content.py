@@ -123,12 +123,47 @@ def fetch_news_rss():
     except Exception as e:
         print(f"RSS Fetch Error: {e}")
     return None
+# 금융/경제 RSS
+FINANCE_FEEDS = [
+    {"name": "증시/금융", "url": "https://www.yonhapnewstv.co.kr/category/news/economy/feed/"}
+]
 
-def generate_npc_post(npc_profile):
-    """NPC 프로필에 따른 게시글 생성 로직"""
-    post_type = random.choices(["daily", "news", "image"], weights=[60, 20, 20])[0]
-    
+# 날씨별 감성 템플릿
+WEATHER_POSTS = {
+    "Rain": ["비가 주룩주룩 오네요. 파전에 막걸리 딱인 날씨! ☔", "빗소리 들으면서 책 읽으니까 너무 좋아요.", "오늘 같이 비 오는 날은 집에서 영화 보는 게 최고죠."],
+    "Clear": ["오늘 날씨 실화인가요? 하늘이 너무 맑아요! ☀️", "햇살이 따사로워서 광합성 하러 나왔습니다.", "구름 한 점 없는 파란 하늘, 기분까지 좋아지네요."],
+    "Clouds": ["구름이 많아서 흐릿한 날이네요. 그래도 운치 있어요.", "금방이라도 비가 올 것 같은 날씨.. 다들 우산 챙기셨죠?", "흐린 날엔 따뜻한 라떼 한 잔이 생각나요. ☕"],
+    "Snow": ["와! 눈이 와요! 세상이 온통 하얗네요 ❄️", "첫눈인가요? 다들 눈 구경하고 계신가요?", "미끄러우니까 길 조심하세요!"]
+}
+
+def fetch_finance_rss():
+    """경제 뉴스 가져오기"""
+    import feedparser
+    try:
+        feed = feedparser.parse(FINANCE_FEEDS[0]['url'])
+        if feed.entries:
+            entry = random.choice(feed.entries[:3])
+            return f"[경제 브리핑] {entry.title}\n\n최근 경제 동향 공유합니다. 다들 참고하세요! 📈\n\n상세보기: {entry.link}"
+    except: return None
+    return None
+
+def generate_npc_post(npc_profile, weather_data=None):
+    """NPC 프로필 및 외부 환경(날씨 등)에 따른 게시글 생성 로직"""
+    # 1. 날씨 기반 포스팅 (확률적)
+    if weather_data and random.random() < 0.3:
+        main_weather = weather_data.get('weather', [{}])[0].get('main', 'Clear')
+        if main_weather in WEATHER_POSTS:
+            return random.choice(WEATHER_POSTS[main_weather]), []
+
+    # 2. 유형 결정
+    post_type = random.choices(["daily", "news", "image", "finance"], weights=[50, 20, 20, 10])[0]
+
+    if post_type == "finance":
+        content = fetch_finance_rss()
+        if content: return content, []
+
     if post_type == "news":
+...
         news = fetch_news_rss()
         if news:
             content = f"[{news['category']}] {news['title']}\n\n{news['summary']}\n\n상세보기: {news['link']}"

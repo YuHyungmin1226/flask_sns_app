@@ -114,7 +114,13 @@ def create_app():
             if 'is_npc' not in columns:
                 print("[Patch] user 테이블에 is_npc 컬럼이 누락되어 추가합니다.")
                 db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN is_npc BOOLEAN DEFAULT FALSE'))
-                db.session.commit()
+            
+            npc_columns = [c['name'] for c in inspector.get_columns('npc_profile')]
+            if 'memory' not in npc_columns:
+                print("[Patch] npc_profile 테이블에 memory 컬럼이 누락되어 추가합니다.")
+                db.session.execute(db.text('ALTER TABLE "npc_profile" ADD COLUMN memory TEXT DEFAULT \'{}\''))
+            
+            db.session.commit()
         except Exception as e:
             db.session.rollback()
             print(f"[Patch Error] 데이터베이스 패치 중 오류 발생: {e}")
