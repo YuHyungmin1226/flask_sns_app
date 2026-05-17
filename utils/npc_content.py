@@ -102,9 +102,9 @@ def get_random_reaction(content="", personality='friendly'):
     return random.choice(REACTIONS[category])
 
 def fetch_random_image(keyword="nature"):
-    """Unsplash 무료 API를 통한 이미지 URL 획득 (API Key 없이도 기본 제공되는 랜덤 이미지 활용)"""
-    # Source Unsplash는 키 없이도 특정 키워드의 랜덤 이미지를 제공함
-    return f"https://source.unsplash.com/random/1200x800/?{keyword}"
+    """LoremFlickr를 통한 무작위 이미지 URL 획득 (비용 0원, 키 불필요)"""
+    # Source Unsplash가 중단됨에 따라 더 안정적인 LoremFlickr로 교체
+    return f"https://loremflickr.com/1200/800/{keyword}"
 
 def fetch_news_rss():
     """RSS 피드에서 최신 뉴스 하나 가져오기 (비용 0원)"""
