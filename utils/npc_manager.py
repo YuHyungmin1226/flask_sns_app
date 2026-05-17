@@ -2,13 +2,22 @@ import random
 import json
 from datetime import datetime, timedelta
 from extensions import db
-from models import User, Post, Comment, NpcProfile, SystemSetting, NpcRelationship
+from models import User, Post, Comment, NpcProfile, SystemSetting, NpcRelationship, SystemLog
 from utils.npc_content import generate_npc_post, get_random_reaction
 from utils.time_utils import get_korean_time_for_db
 from utils.url_utils import URLPreviewGenerator
 from utils.tasks import trigger_db_sync
 
 url_preview_generator = URLPreviewGenerator()
+
+def log_event(message, level='info'):
+    """시스템 로그를 DB에 기록합니다."""
+    try:
+        new_log = SystemLog(message=message, level=level)
+        db.session.add(new_log)
+        db.session.commit()
+    except:
+        db.session.rollback()
 
 def get_next_delay(activity_level):
     """활동 지수(1~10)에 따른 다음 활동 대기 시간(분) 계산 (매우 공격적)"""
@@ -26,7 +35,6 @@ def run_npc_cycle(app):
             return
 
         now = get_korean_time_for_db()
-        print(f"[NPC Heartbeat] Cycle started at {now}")
         
         # 날씨 데이터
         weather_setting = db.session.get(SystemSetting, 'current_weather')
@@ -42,7 +50,6 @@ def run_npc_cycle(app):
             
             # 자가 수정: 예정 시간이 없거나 너무 멀면(2시간 이상) 현재로 초기화
             if not p.next_action_at or p.next_action_at > (now + timedelta(hours=2)):
-                print(f"[NPC Heartbeat] Resetting {npc.username} schedule.")
                 p.next_action_at = now
 
             if p.next_action_at <= now:
@@ -50,14 +57,14 @@ def run_npc_cycle(app):
                 if is_sleeping and random.random() > 0.05:
                     continue
                     
-                print(f"[NPC Heartbeat] {npc.username} is posting now.")
                 try:
                     execute_npc_post(npc, weather_data)
+                    log_event(f"[활동] {npc.username}님이 새 게시글을 작성했습니다.")
                 except Exception as e:
-                    print(f"NPC Post Error ({npc.username}): {e}")
+                    log_event(f"[오류] {npc.username} 게시 중 에러: {str(e)}", 'error')
             else:
-                diff = (p.next_action_at - now).total_seconds() / 60
-                print(f"[NPC Heartbeat] {npc.username} waiting ({int(diff)}m)")
+                # 대기 중 로그 (너무 자주 찍히지 않게 디버그 용)
+                pass
 
         # 2. 댓글 반응 체크 (최근 15분 이내 글)
         recent_posts = Post.query.filter(Post.created_at >= now - timedelta(minutes=15)).all()
@@ -81,7 +88,11 @@ def run_npc_cycle(app):
                     bonus = min(affinity * 0.01, 0.2)
                     
                     if random.random() < (chance + bonus):
-                        execute_npc_comment(npc, post)
+                        try:
+                            execute_npc_comment(npc, post)
+                            log_event(f"[활동] {npc.username}님이 게시글({post.id})에 댓글을 남겼습니다.")
+                        except Exception as e:
+                            log_event(f"[오류] {npc.username} 댓글 중 에러: {str(e)}", 'error')
 
 def execute_npc_post(npc, weather_data=None):
     """실제 게시글 작성 및 다음 시간 예약"""
@@ -102,7 +113,7 @@ def execute_npc_post(npc, weather_data=None):
     npc.npc_profile.next_action_at = get_korean_time_for_db() + timedelta(minutes=delay)
     
     db.session.commit()
-    trigger_db_sync() # 즉시 클라우드 동기화
+    trigger_db_sync() 
     print(f"[NPC Activity] {npc.username} posted. Next in {delay}m.")
 
 def execute_npc_comment(npc, post):
@@ -158,9 +169,8 @@ def init_npcs():
     
     db.session.commit()
     
-    # NPC 시스템 설정 초기화
     if not db.session.get(SystemSetting, 'npc_system_enabled'):
         db.session.add(SystemSetting(key='npc_system_enabled', value='True'))
         db.session.commit()
     
-    print("[NPC Init] NPCs are ready to go.")
+    log_event("NPC 시스템이 초기화되었습니다.")

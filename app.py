@@ -183,7 +183,7 @@ def setup_scheduler(app):
     scheduler = BackgroundScheduler(timezone='Asia/Seoul')
     scheduler.add_job(func=scheduled_weather_task, trigger='cron', hour=6, minute=0)
     scheduler.add_job(func=sync_task, trigger='interval', minutes=10)
-    scheduler.add_job(func=npc_task, trigger='interval', minutes=5) # 5분마다 체크
+    scheduler.add_job(func=npc_task, trigger='interval', minutes=1) # 1분마다 체크 (공격적 반영)
     scheduler.start()
 
 app = create_app()
