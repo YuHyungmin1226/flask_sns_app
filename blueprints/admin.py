@@ -4,11 +4,11 @@ from datetime import datetime
 import json
 from flask_login import login_required, current_user
 from extensions import db
-from models import User, Post, SystemSetting
-from utils.tasks import trigger_db_sync
-import zipfile
 from models import User, Post, SystemSetting, SystemLog
 from utils.tasks import trigger_db_sync
+import zipfile
+
+admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/admin')
 @login_required
@@ -16,16 +16,16 @@ def admin_dashboard():
     if current_user.username != 'admin':
         flash('관리자 권한이 필요합니다.', 'error')
         return redirect(url_for('main.index'))
-
+    
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
     pending_users = User.query.filter_by(is_approved=False).all()
     weather_bot_enabled = SystemSetting.query.get('weather_bot_enabled').value == 'True' if SystemSetting.query.get('weather_bot_enabled') else False
     npc_system_enabled = SystemSetting.query.get('npc_system_enabled').value == 'True' if SystemSetting.query.get('npc_system_enabled') else False
-
+    
     # 최근 시스템 로그 10개 가져오기
     system_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
-
+    
     return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, 
                            weather_bot_enabled=weather_bot_enabled, npc_system_enabled=npc_system_enabled,
                            system_logs=system_logs)
