@@ -30,15 +30,15 @@ class GoogleDriveManager:
         return self._local.instance
 
     def _authenticate(self):
-        """OAuth2 Refresh Token을 사용하여 사용자 계정 인증 수행 (실시간 환경 변수 로드)"""
-        # 매번 환경 변수를 새로 확인하여 load_dotenv() 이후의 값을 반영함
-        load_dotenv()
+        """OAuth2 Refresh Token을 사용하여 사용자 계정 인증 수행"""
         client_id = os.environ.get('GOOGLE_CLIENT_ID')
         client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
         refresh_token = os.environ.get('GOOGLE_REFRESH_TOKEN')
 
         if not all([client_id, client_secret, refresh_token]):
-            print("오류: 구글 드라이브 인증에 필요한 환경 변수가 설정되지 않았습니다.")
+            # 디버깅을 위해 누락된 필드 출력 (값은 출력하지 않음)
+            missing = [k for k, v in {'ID': client_id, 'Secret': client_secret, 'Token': refresh_token}.items() if not v]
+            print(f"오류: 구글 드라이브 인증 정보가 누락되었습니다. ({', '.join(missing)})")
             return None
 
         try:
