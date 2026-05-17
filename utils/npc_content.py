@@ -2,6 +2,7 @@ import random
 import json
 import requests
 from datetime import datetime
+from utils.time_utils import get_korean_time_for_db
 
 # 페르소나별 문장 조각 데이터
 PERSONA_DATA = {
@@ -98,8 +99,22 @@ def generate_sentence(personality='friendly'):
     return f"{filler}{opening}{body} {closing}"
 
 def get_random_daily_post(personality='friendly'):
-    """무작위 일상 글 생성"""
-    return generate_sentence(personality)
+    """무작위 일상 글 생성 (시간대별 가중치 적용)"""
+    now = get_korean_time_for_db()
+    
+    # 시간대별로 추가 템플릿 제공 (PERSONA_DATA에 기반한 기본 문장 외에 시간 특화 문구)
+    time_special = ""
+    if 6 <= now.hour < 10:
+        time_special = random.choice(["좋은 아침이에요! ", "다들 기분 좋은 아침 맞이하셨나요? ", "벌써 아침이라니.. ☀️ "])
+    elif 11 <= now.hour < 14:
+        time_special = random.choice(["맛점하셨나요? ", "슬슬 배고파지는 점심시간이네요. ", "오늘 점심 메뉴 추천해주세요! 🍱 "])
+    elif 18 <= now.hour < 21:
+        time_special = random.choice(["오늘 하루도 수고 많으셨습니다! ", "드디어 퇴근/일과 마무리에요. ", "맛있는 저녁 챙겨 드세요! 🌙 "])
+    elif 21 <= now.hour <= 23 or 0 <= now.hour < 2:
+        time_special = random.choice(["밤이 깊었네요. ", "다들 오늘 하루 잘 마무리하셨나요? ", "조용한 밤공기가 좋네요. ✨ "])
+        
+    base_sentence = generate_sentence(personality)
+    return f"{time_special}{base_sentence}"
 
 def get_random_reaction(content="", personality='friendly'):
     """콘텐츠 키워드 분석 및 성격에 따른 무작위 댓글 반환"""

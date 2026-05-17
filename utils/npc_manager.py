@@ -10,12 +10,12 @@ from utils.url_utils import URLPreviewGenerator # 수정된 임포트
 url_preview_generator = URLPreviewGenerator()
 
 def get_next_delay(activity_level):
-    """활동 지수에 따른 다음 활동 대기 시간(분) 계산 (무작위성 부여)"""
-    # 활동 지수 1(매우 낮음) ~ 10(매우 높음)
-    # 10일 때 평균 1시간, 1일 때 평균 24시간 대기하도록 설정
-    base_minutes = (11 - activity_level) * 120 
-    jitter = random.uniform(0.5, 1.5) # 50% ~ 150% 사이의 무작위성
-    return int(base_minutes * jitter)
+    """활동 지수에 따른 다음 활동 대기 시간(분) 계산 (최적화)"""
+    # 활동 지수 1~10에 따라 대기 시간을 대폭 단축 (생동감 부여)
+    # 10일 때 평균 40분, 1일 때 평균 400분(약 6시간) 대기하도록 설정
+    base_minutes = (11 - activity_level) * 40
+    jitter = random.uniform(0.5, 1.5)
+    return max(10, int(base_minutes * jitter)) # 최소 10분은 대기
 
 def run_npc_cycle(app):
     """전체 NPC 활동 사이클 실행 (스케줄러에 의해 호출됨)"""
