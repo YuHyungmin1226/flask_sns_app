@@ -94,13 +94,13 @@
                                     <td class="px-4 py-3 small text-muted">{{ user.created_at|korean_time }}</td>
                                     <td class="px-4 py-3 text-end">
                                         <div class="d-flex gap-2 justify-content-end">
-                                            <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}" onsubmit="return confirm('승인하시겠습니까?')">
+                                            <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}" onsubmit="return confirm('승인하시겠습니까?')" style="display: contents;">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-primary btn-sm px-0" style="border-radius: 6px; width: 60px;">승인</button>
+                                                <button type="submit" class="btn btn-primary btn-sm px-0 d-inline-flex align-items-center justify-content-center" style="border-radius: 6px; width: 60px; height: 32px; padding: 0;">승인</button>
                                             </form>
-                                            <form method="POST" action="{{ url_for('admin.reject_user', user_id=user.id) }}" onsubmit="return confirm('거절하시겠습니까?')">
+                                            <form method="POST" action="{{ url_for('admin.reject_user', user_id=user.id) }}" onsubmit="return confirm('거절하시겠습니까?')" style="display: contents;">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm px-0" style="border-radius: 6px; width: 60px;">거절</button>
+                                                <button type="submit" class="btn btn-outline-danger btn-sm px-0 d-inline-flex align-items-center justify-content-center" style="border-radius: 6px; width: 60px; height: 32px; padding: 0;">거절</button>
                                             </form>
                                         </div>
                                     </td>
