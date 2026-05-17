@@ -54,12 +54,50 @@ RSS_FEEDS = [
     {"name": "생활/문화", "url": "https://www.yonhapnewstv.co.kr/category/news/culture/feed/"}
 ]
 
-def get_random_daily_post():
-    """무작위 일상 글 반환"""
-    return random.choice(DAILY_POSTS)
+# 키워드 기반 맞춤 리액션 (비용 0원)
+KEYWORD_REACTIONS = {
+    "비": ["비 오니까 파전에 막걸리 생각나네요! ☔", "비 소리가 참 좋네요. 다들 우산 챙기셨죠?", "축축하지만 감성적인 날이에요."],
+    "커피": ["저도 커피 한 잔 마셔야겠어요! ☕", "커피 향이 여기까지 나는 것 같아요.", "역시 오후엔 카페인 수급이 필요하죠!"],
+    "배고파": ["저도 슬슬 배고픈데 뭐 드실 거예요?", "맛있는 거 추천해드릴까요? 😋", "꼬르륵.. 저도요!"],
+    "퇴근": ["오늘 하루도 정말 고생 많으셨어요! 🙌", "드디어 퇴근! 즐거운 저녁 보내세요.", "부러워요! 저는 조금 더 있다가 가요."],
+    "공부": ["공부 힘드시죠? 화이팅하세요! 📚", "열공하시는 모습이 멋져요!", "잠시 쉬어가는 건 어떨까요?"],
+    "운동": ["운동 오운완! 멋지십니다 💪", "저도 운동 시작해야 하는데.. 자극받고 가요!", "체력이 국력이죠! 화이팅!"],
+    "여행": ["와, 여행 가고 싶어지네요 ✈️", "사진 보니까 힐링돼요. 조심히 다녀오세요!", "어디인지 정보 좀 주실 수 있나요?"]
+}
 
-def get_random_reaction(personality='friendly'):
-    """성격에 따른 무작위 댓글 반환"""
+# 시간대별 특화 게시글
+TIME_BASED_POSTS = {
+    "morning": ["좋은 아침이에요! 다들 오늘 하루도 힘차게 시작해봐요 ☀️", "아침 공기가 상쾌하네요. 기분 좋은 하루 되세요!", "벌써 아침이라니.. 졸리지만 화이팅!"],
+    "lunch": ["슬슬 배고파지네요. 다들 점심 메뉴 정하셨나요? 🍱", "맛점하세요! 저는 오늘 제육볶음 먹으려구요.", "점심 먹고 나른한 오후네요. 커피 한 잔 어떠세요?"],
+    "evening": ["오늘 하루도 수고 많으셨습니다. 편안한 저녁 되세요 🌙", "저녁 노을이 예쁘네요. 다들 맛있는 거 드세요!", "드디어 퇴근! 오늘 하루 어떠셨나요?"],
+    "night": ["밤이 깊었네요. 다들 좋은 꿈 꾸세요 ✨", "조용한 밤공기가 참 좋네요. 잠이 잘 올 것 같아요.", "아직 안 주무시는 분 계신가요? 저는 이제 자러 갑니다."]
+}
+
+def get_random_daily_post():
+    """무작위 일상 글 반환 (시간대 고려)"""
+    now = datetime.now()
+    if 6 <= now.hour < 11:
+        pool = DAILY_POSTS + TIME_BASED_POSTS["morning"]
+    elif 11 <= now.hour < 14:
+        pool = DAILY_POSTS + TIME_BASED_POSTS["lunch"]
+    elif 17 <= now.hour < 21:
+        pool = DAILY_POSTS + TIME_BASED_POSTS["evening"]
+    elif 21 <= now.hour <= 23 or 0 <= now.hour < 2:
+        pool = DAILY_POSTS + TIME_BASED_POSTS["night"]
+    else:
+        pool = DAILY_POSTS
+    
+    return random.choice(pool)
+
+def get_random_reaction(content="", personality='friendly'):
+    """콘텐츠 키워드 분석 및 성격에 따른 무작위 댓글 반환"""
+    # 1. 키워드 분석 (Context-aware)
+    if content:
+        for keyword, reactions in KEYWORD_REACTIONS.items():
+            if keyword in content:
+                return random.choice(reactions)
+
+    # 2. 일반 리액션 (Fallback)
     category = random.choice(["positive", "positive", "neutral", "question"])
     return random.choice(REACTIONS[category])
 

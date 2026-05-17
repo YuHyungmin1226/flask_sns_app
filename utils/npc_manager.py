@@ -51,8 +51,11 @@ def run_npc_cycle(app):
         ).all()
         
         for post in recent_posts:
-            # 20% 확률로 NPC가 댓글 반응
-            if random.random() < 0.2:
+            # 1. 대상에 따른 반응 확률 차등 (실제 유저에게 더 활발히 반응)
+            author = User.query.get(post.author_id)
+            reaction_chance = 0.3 if not author.is_npc else 0.1 # 유저는 30%, NPC는 10% 확률
+            
+            if random.random() < reaction_chance:
                 # 이 글에 댓글 달지 않은 NPC 무작위 선택
                 npc_commenter = User.query.filter(User.is_npc == True).order_by(db.func.random()).first()
                 if npc_commenter and npc_commenter.id != post.author_id:
@@ -85,8 +88,8 @@ def execute_npc_post(npc):
     print(f"[NPC Activity] {npc.username} posted content. Next action in {delay} mins.")
 
 def execute_npc_comment(npc, post):
-    """무작위 지연 후 댓글 작성 시뮬레이션 (여기서는 즉시 작성하지만 스케줄러가 무작위로 호출함)"""
-    reaction = get_random_reaction(npc.npc_profile.personality)
+    """무작위 지연 후 댓글 작성 시뮬레이션 (맥락 인지형)"""
+    reaction = get_random_reaction(post.content, npc.npc_profile.personality)
     
     new_comment = Comment(
         content=reaction,
