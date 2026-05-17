@@ -9,7 +9,7 @@ def fetch_and_post_weather(app, db, Post, SystemSetting, User):
     """
     with app.app_context():
         # 1. 스위치 상태 확인
-        setting = SystemSetting.query.get('weather_bot_enabled')
+        setting = db.session.get(SystemSetting, 'weather_bot_enabled')
         if not setting or setting.value != 'True':
             print("[Weather_Bot] 스위치가 OFF 상태입니다. 날씨 봇 구동을 건너뜁니다.")
             return
@@ -74,9 +74,11 @@ def fetch_and_post_weather(app, db, Post, SystemSetting, User):
             
             # NPC 연동을 위해 원본 데이터 저장
             import json
-            weather_setting = SystemSetting.query.get('current_weather') or SystemSetting(key='current_weather')
+            weather_setting = db.session.get(SystemSetting, 'current_weather')
+            if not weather_setting:
+                weather_setting = SystemSetting(key='current_weather')
+                db.session.add(weather_setting)
             weather_setting.value = json.dumps(data)
-            db.session.add(weather_setting)
             
             admin = User.query.filter_by(username='admin').first()
             if not admin:
