@@ -82,11 +82,11 @@
                                         <div class="d-flex gap-2 justify-content-end">
                                             <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}" onsubmit="return confirm('승인하시겠습니까?')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-primary btn-sm px-3" style="border-radius: 6px;">승인</button>
+                                                <button type="submit" class="btn btn-primary btn-sm px-0" style="border-radius: 6px; width: 60px;">승인</button>
                                             </form>
                                             <form method="POST" action="{{ url_for('admin.reject_user', user_id=user.id) }}" onsubmit="return confirm('거절하시겠습니까?')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm px-3" style="border-radius: 6px;">거절</button>
+                                                <button type="submit" class="btn btn-outline-danger btn-sm px-0" style="border-radius: 6px; width: 60px;">거절</button>
                                             </form>
                                         </div>
                                     </td>
