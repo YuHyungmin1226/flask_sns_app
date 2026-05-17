@@ -112,20 +112,26 @@
             });
         }
 
-        // 5. 실시간 새 글 체크 폴링 (30초마다)
-        setInterval(checkNewPosts, 30000);
+        // 5. 실시간 새 글 체크 폴링 (10초마다)
+        console.log("[Live Update] Notification system started. Polling every 10s...");
+        setInterval(checkNewPosts, 10000);
 
         // 6. 알림 버튼 클릭 시 새 글 삽입
         if (newPostAlert) {
             newPostAlert.addEventListener('click', function() {
+                console.log("[Live Update] Alert clicked. Prepending posts...");
                 if (pendingPostsHtml) {
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = pendingPostsHtml;
                     const newCards = tempDiv.querySelectorAll('.post-card');
                     
-                    // 최신 ID 업데이트
+                    // 최신 ID 업데이트 (안전한 파싱)
                     if (newCards.length > 0) {
-                        lastPostId = Math.max(lastPostId, parseInt(newCards[0].dataset.postId));
+                        const newestId = parseInt(newCards[0].dataset.postId);
+                        if (!isNaN(newestId)) {
+                            lastPostId = Math.max(lastPostId, newestId);
+                            console.log(`[Live Update] Updated lastPostId to ${lastPostId}`);
+                        }
                     }
 
                     // 부드럽게 추가
@@ -134,6 +140,7 @@
                     // 알림 초기화
                     newPostAlert.classList.add('d-none');
                     pendingPostsHtml = '';
+                    document.title = "홈 - 개인 SNS";
                     
                     // 이벤트 바인딩 및 미디어 초기화
                     bindDeleteEvents();
@@ -150,7 +157,7 @@
     });
 
     function checkNewPosts() {
-        if (lastPostId === 0) return;
+        console.log(`[Live Update] Checking for posts newer than ID: ${lastPostId}...`);
         
         fetch(`/posts/check-new?last_id=${lastPostId}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -158,14 +165,17 @@
         .then(response => response.json())
         .then(data => {
             if (data.count > 0) {
+                console.log(`[Live Update] Found ${data.count} new posts!`);
                 pendingPostsHtml = data.html;
                 newPostCountSpan.textContent = data.count;
                 newPostAlert.classList.remove('d-none');
-                // 브라우저 탭 타이틀에 알림 표시 (선택 사항)
+                // 브라우저 탭 타이틀에 알림 표시
                 document.title = `(${data.count}) 새로운 소식 - 개인 SNS`;
+            } else {
+                console.log("[Live Update] No new posts.");
             }
         })
-        .catch(err => console.error('Real-time check error:', err));
+        .catch(err => console.error('[Live Update] Fetch error:', err));
     }
 
     function loadMorePosts() {
