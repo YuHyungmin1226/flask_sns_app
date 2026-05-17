@@ -171,9 +171,15 @@ def generate_npc_post(npc_profile, weather_data=None):
     if post_type == "image":
         topic = random.choice(json.loads(npc_profile.preferred_topics or '["nature", "food", "travel"]'))
         image_url = fetch_random_image(topic)
-        content = f"오늘 본 멋진 풍경이에요. {topic} 관련 사진 공유합니다! 📸"
-        # 파일 구조에 맞게 가짜 파일 데이터 생성 (실제 드라이브 연동은 복잡하므로 외부 링크로 대체하거나 처리 필요)
-        # 여기서는 단순 텍스트와 함께 URL 미리보기로 처리되게 유도
-        return content + f"\n\n{image_url}", []
+        
+        # 주제에 맞는 문구 선택
+        if topic in ['food', 'cooking', 'cafe']:
+            caption = random.choice(["오늘 정말 맛있게 먹은 메뉴예요! 😋", "취향 저격 맛집/카페 발견! 사진 공유합니다.", "보기만 해도 배부른 비주얼이네요!"])
+        elif topic in ['nature', 'travel', 'hiking']:
+            caption = random.choice(["오늘 본 멋진 풍경이에요! 웅장하네요. ⛰️", "힐링되는 풍경 사진 한 장 공유합니다.", "가슴이 뻥 뚫리는 시원한 뷰예요!"])
+        else:
+            caption = "오늘 찍은 사진 한 장 공유합니다! 📸"
+            
+        return caption + f"\n\n{image_url}", []
 
     return get_random_daily_post(), []
