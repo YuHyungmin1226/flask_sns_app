@@ -282,7 +282,7 @@
     <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container">
             <div class="row w-100 mx-auto">
-                <div class="col-lg-8 mx-auto d-flex align-items-center justify-content-between px-0 flex-wrap">
+                <div class="col-lg-8 mx-auto d-flex align-items-center justify-content-between px-0 flex-wrap flex-lg-nowrap">
                     <a class="navbar-brand me-4" href="{{ url_for('main.index') }}">
                         <i class="bi bi-intersect"></i> FlaskSNS
                     </a>
@@ -312,7 +312,7 @@
                         <span class="navbar-toggler-icon"></span>
                     </button>
 
-                    <div class="collapse navbar-collapse w-100 w-lg-auto" id="navbarNav">
+                    <div class="collapse navbar-collapse" id="navbarNav">
                         {% if current_user.is_authenticated %}
                         <div class="me-auto"></div>
                         <ul class="navbar-nav pt-2 pt-lg-0">
