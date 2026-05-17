@@ -20,8 +20,10 @@ def admin_dashboard():
     posts = Post.query.order_by(Post.created_at.desc()).all()
     pending_users = User.query.filter_by(is_approved=False).all()
     weather_bot_enabled = SystemSetting.query.get('weather_bot_enabled').value == 'True' if SystemSetting.query.get('weather_bot_enabled') else False
+    npc_system_enabled = SystemSetting.query.get('npc_system_enabled').value == 'True' if SystemSetting.query.get('npc_system_enabled') else False
     
-    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, weather_bot_enabled=weather_bot_enabled)
+    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, 
+                           weather_bot_enabled=weather_bot_enabled, npc_system_enabled=npc_system_enabled)
 
 @admin_bp.route('/admin/user/<int:user_id>/approve', methods=['POST'])
 @login_required
@@ -87,6 +89,17 @@ def toggle_weather_bot():
     if current_user.username != 'admin': return jsonify({'success': False}), 403
     setting = SystemSetting.query.get('weather_bot_enabled') or SystemSetting(key='weather_bot_enabled', value='True')
     if not setting.value: db.session.add(setting)
+    setting.value = 'False' if setting.value == 'True' else 'True'
+    db.session.commit()
+    trigger_db_sync()
+    return jsonify({'success': True, 'enabled': setting.value == 'True'})
+
+@admin_bp.route('/admin/npc-system/toggle', methods=['POST'])
+@login_required
+def toggle_npc_system():
+    if current_user.username != 'admin': return jsonify({'success': False}), 403
+    setting = SystemSetting.query.get('npc_system_enabled') or SystemSetting(key='npc_system_enabled', value='True')
+    if not SystemSetting.query.get('npc_system_enabled'): db.session.add(setting)
     setting.value = 'False' if setting.value == 'True' else 'True'
     db.session.commit()
     trigger_db_sync()

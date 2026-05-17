@@ -16,7 +16,7 @@
 
                 <!-- 시스템 자동화 제어 섹션 -->
                 <div class="row g-4 mb-5">
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <div class="p-4 rounded-4 bg-light border border-secondary border-opacity-10 shadow-sm h-100 d-flex flex-column justify-content-between">
                             <div>
                                 <h5 class="fw-bold mb-2"><i class="bi bi-cloud-sun text-info me-2"></i>모닝 날씨 비서</h5>
@@ -26,6 +26,20 @@
                                 <span class="small fw-bold me-2 text-muted">가동 상태</span>
                                 <div class="form-check form-switch mb-0" style="font-size: 1.5rem;">
                                     <input class="form-check-input mt-0 cursor-pointer text-info" type="checkbox" role="switch" id="weatherBotToggle" {% if weather_bot_enabled %}checked{% endif %}>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-4 rounded-4 bg-light border border-secondary border-opacity-10 shadow-sm h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="fw-bold mb-2"><i class="bi bi-robot text-primary me-2"></i>NPC 시스템</h5>
+                                <div class="text-muted small mb-3">무작위 시간에 NPC들이 자동으로 글을 올리고 서로 댓글을 달며 활동합니다.</div>
+                            </div>
+                            <div class="d-flex justify-content-end align-items-center">
+                                <span class="small fw-bold me-2 text-muted">가동 상태</span>
+                                <div class="form-check form-switch mb-0" style="font-size: 1.5rem;">
+                                    <input class="form-check-input mt-0 cursor-pointer text-primary" type="checkbox" role="switch" id="npcSystemToggle" {% if npc_system_enabled %}checked{% endif %}>
                                 </div>
                             </div>
                         </div>
@@ -214,6 +228,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 weatherBotToggle.disabled = false;
                 alert('통신 오류가 발생했습니다.');
                 weatherBotToggle.checked = !weatherBotToggle.checked;
+            });
+        });
+    }
+
+    const npcSystemToggle = document.getElementById('npcSystemToggle');
+    if(npcSystemToggle) {
+        npcSystemToggle.addEventListener('change', function() {
+            npcSystemToggle.disabled = true;
+            fetch("{{ url_for('admin.toggle_npc_system') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                npcSystemToggle.disabled = false;
+                if(data.success) {
+                    // Success
+                } else {
+                    alert(data.message || '오류가 발생했습니다.');
+                    npcSystemToggle.checked = !npcSystemToggle.checked;
+                }
+            })
+            .catch(error => {
+                npcSystemToggle.disabled = false;
+                alert('통신 오류가 발생했습니다.');
+                npcSystemToggle.checked = !npcSystemToggle.checked;
             });
         });
     }
