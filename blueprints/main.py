@@ -35,6 +35,26 @@ def load_more():
         'has_next': pagination.has_next
     })
 
+@main_bp.route('/posts/check-new')
+@login_required
+def check_new_posts():
+    last_id = request.args.get('last_id', 0, type=int)
+    # last_id 이후에 생성된 공개 게시물 조회
+    new_posts = Post.query.filter(Post.id > last_id, Post.is_public == True).order_by(Post.created_at.desc()).all()
+    
+    if not new_posts:
+        return jsonify({'count': 0, 'html': ''})
+    
+    html_snippets = []
+    for post in new_posts:
+        html_snippets.append(render_template('partials/_post_card.html', post=post))
+    
+    return jsonify({
+        'count': len(new_posts),
+        'html': "".join(html_snippets),
+        'newest_id': new_posts[0].id if new_posts else last_id
+    })
+
 @main_bp.route('/search')
 @login_required
 def search():

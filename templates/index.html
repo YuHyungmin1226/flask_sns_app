@@ -20,6 +20,13 @@
             </div>
         </div>
 
+        <!-- 실시간 새 글 알림 버튼 -->
+        <div id="new-post-alert" class="text-center mb-4 d-none">
+            <button class="btn btn-primary rounded-pill shadow-sm px-4 py-2 animate__animated animate__bounceIn">
+                <i class="bi bi-arrow-up-circle me-2"></i> 새로운 소식이 있습니다 (<span id="new-post-count">0</span>)
+            </button>
+        </div>
+
         <!-- 게시글 목록 -->
         <div id="postContainer">
             {% if posts %}
@@ -62,17 +69,27 @@
     const container = document.getElementById('postContainer');
     const noMore = document.getElementById('no-more-posts');
     const loadMoreUrl = trigger ? trigger.dataset.loadUrl : '';
+    const newPostAlert = document.getElementById('new-post-alert');
+    const newPostCountSpan = document.getElementById('new-post-count');
     
     let currentPage = 1;
     let isLoading = false;
     let hasNextPage = trigger ? (trigger.dataset.hasNext === 'true') : false;
+    let lastPostId = 0;
+    let pendingPostsHtml = '';
 
     // 초기화 함수
     document.addEventListener('DOMContentLoaded', function () {
-        // 1. 초기 게시글 삭제 이벤트 바인딩
+        // 1. 최신 게시글 ID 파악
+        const firstPost = container.querySelector('.post-card');
+        if (firstPost) {
+            lastPostId = parseInt(firstPost.dataset.postId);
+        }
+
+        // 2. 초기 게시글 삭제 이벤트 바인딩
         bindDeleteEvents();
 
-        // 2. 무한 스크롤 설정
+        // 3. 무한 스크롤 설정
         if (trigger && hasNextPage) {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
@@ -84,7 +101,7 @@
             observer.observe(trigger);
         }
 
-        // 3. URL 미리보기 클릭 이벤트 (이벤트 위임 사용)
+        // 4. URL 미리보기 클릭 이벤트 (이벤트 위임 사용)
         if (container) {
             container.addEventListener('click', function(e) {
                 const link = e.target.closest('.url-preview a');
@@ -95,9 +112,61 @@
             });
         }
 
-        // 4. 비디오/오디오 컨트롤 최적화
+        // 5. 실시간 새 글 체크 폴링 (30초마다)
+        setInterval(checkNewPosts, 30000);
+
+        // 6. 알림 버튼 클릭 시 새 글 삽입
+        if (newPostAlert) {
+            newPostAlert.addEventListener('click', function() {
+                if (pendingPostsHtml) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = pendingPostsHtml;
+                    const newCards = tempDiv.querySelectorAll('.post-card');
+                    
+                    // 최신 ID 업데이트
+                    if (newCards.length > 0) {
+                        lastPostId = Math.max(lastPostId, parseInt(newCards[0].dataset.postId));
+                    }
+
+                    // 부드럽게 추가
+                    container.insertAdjacentHTML('afterbegin', pendingPostsHtml);
+                    
+                    // 알림 초기화
+                    newPostAlert.classList.add('d-none');
+                    pendingPostsHtml = '';
+                    
+                    // 이벤트 바인딩 및 미디어 초기화
+                    bindDeleteEvents();
+                    initMediaControls();
+                    
+                    // 최상단으로 부드럽게 스크롤
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        }
+
+        // 7. 비디오/오디오 컨트롤 최적화
         initMediaControls();
     });
+
+    function checkNewPosts() {
+        if (lastPostId === 0) return;
+        
+        fetch(`/posts/check-new?last_id=${lastPostId}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.count > 0) {
+                pendingPostsHtml = data.html;
+                newPostCountSpan.textContent = data.count;
+                newPostAlert.classList.remove('d-none');
+                // 브라우저 탭 타이틀에 알림 표시 (선택 사항)
+                document.title = `(${data.count}) 새로운 소식 - 개인 SNS`;
+            }
+        })
+        .catch(err => console.error('Real-time check error:', err));
+    }
 
     function loadMorePosts() {
         if (isLoading || !hasNextPage) return;
