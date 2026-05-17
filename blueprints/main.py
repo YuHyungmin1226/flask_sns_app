@@ -201,17 +201,20 @@ def add_comment(post_id):
     # 푸시 알림 전송 (포스트 작성자에게)
     if post.author_id != current_user.id:
         def notify_new_comment(author_id, commenter_name, post_id, comment_content):
-            from blueprints.push import send_push_to_user
-            from models import User
-            author = User.query.get(author_id)
-            if author:
-                send_push_to_user(
-                    author,
-                    title=f"새 댓글: {commenter_name}",
-                    body=comment_content[:50] + "..." if len(comment_content) > 50 else comment_content,
-                    url=url_for('main.view_post', post_id=post_id, _external=True)
-                )
+            from flask import current_app
+            with current_app.app_context():
+                from blueprints.push import send_push_to_user
+                from models import User
+                author = User.query.get(author_id)
+                if author:
+                    send_push_to_user(
+                        author,
+                        title=f"새 댓글: {commenter_name}",
+                        body=comment_content[:50] + "..." if len(comment_content) > 50 else comment_content,
+                        url=url_for('main.view_post', post_id=post_id, _external=True)
+                    )
         
+        from flask import current_app
         executor = ThreadPoolExecutor(max_workers=1)
         executor.submit(notify_new_comment, post.author_id, current_user.username, post.id, content)
     

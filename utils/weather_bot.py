@@ -72,6 +72,12 @@ def fetch_and_post_weather(app, db, Post, SystemSetting, User):
             content += f"• 습도: {humidity}%\n\n"
             content += "오늘도 활기찬 하루 보내시길 바랍니다! ☕"
             
+            # NPC 연동을 위해 원본 데이터 저장
+            import json
+            weather_setting = SystemSetting.query.get('current_weather') or SystemSetting(key='current_weather')
+            weather_setting.value = json.dumps(data)
+            db.session.add(weather_setting)
+            
             admin = User.query.filter_by(username='admin').first()
             if not admin:
                 print("[Weather_Bot] 'admin' 계정을 찾을 수 없습니다.")
