@@ -16,7 +16,7 @@
                     <i class="bi bi-lock"></i> 비공개
                 </span>
                 {% endif %}
-                {% if current_user.id == post.author_id %}
+                {% if current_user.id == post.author_id or current_user.username == 'admin' %}
                 <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="inline-form delete-post-form" onsubmit="return confirm('정말 삭제하시겠습니까?')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" title="게시글 삭제">

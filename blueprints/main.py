@@ -237,7 +237,8 @@ def add_comment(post_id):
 @login_required
 def delete_post(post_id):
     post = Post.query.get_or_404(post_id)
-    if post.author_id != current_user.id:
+    # 본인이거나 관리자인 경우 삭제 가능
+    if post.author_id != current_user.id and current_user.username != 'admin':
         flash('삭제 권한이 없습니다.', 'error')
         return redirect(url_for('main.index'))
     
