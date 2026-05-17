@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, send_file, request
 import io
 from datetime import datetime
+import json
 from flask_login import login_required, current_user
 from extensions import db
 from models import User, Post, SystemSetting
@@ -82,51 +83,16 @@ def export_markdown():
     zip_buffer.seek(0)
     return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name=f"export_{datetime.now().strftime('%Y%m%d')}.zip")
 
-
 @admin_bp.route('/admin/weather-bot/toggle', methods=['POST'])
 @login_required
 def toggle_weather_bot():
     if current_user.username != 'admin': return jsonify({'success': False}), 403
     setting = SystemSetting.query.get('weather_bot_enabled') or SystemSetting(key='weather_bot_enabled', value='True')
-    if not setting.value: db.session.add(setting)
+    if not SystemSetting.query.get('weather_bot_enabled'): db.session.add(setting)
     setting.value = 'False' if setting.value == 'True' else 'True'
     db.session.commit()
     trigger_db_sync()
     return jsonify({'success': True, 'enabled': setting.value == 'True'})
-
-@admin_bp.route('/admin/npc/<int:npc_id>/force-post', methods=['POST'])
-@login_required
-def force_npc_post(npc_id):
-    if current_user.username != 'admin': return jsonify({'success': False}), 403
-    from utils.npc_manager import execute_npc_post
-    npc = User.query.get_or_404(npc_id)
-    if not npc.is_npc: return jsonify({'success': False, 'error': 'Not an NPC'}), 400
-    
-    weather_setting = SystemSetting.query.get('current_weather')
-    weather_data = json.loads(weather_setting.value) if weather_setting else None
-    
-    execute_npc_post(npc, weather_data)
-    flash(f'{npc.username}의 게시글 작성을 강제 실행했습니다.', 'success')
-    return redirect(url_for('admin.admin_dashboard'))
-
-@admin_bp.route('/admin/npc/post-as', methods=['POST'])
-@login_required
-def post_as_npc():
-    if current_user.username != 'admin': return jsonify({'success': False}), 403
-    npc_id = request.form.get('npc_id', type=int)
-    content = request.form.get('content')
-    
-    if not content:
-        flash('내용을 입력해주세요.', 'error')
-        return redirect(url_for('admin.admin_dashboard'))
-        
-    npc = User.query.get_or_404(npc_id)
-    new_post = Post(content=content, author_id=npc.id, is_public=True)
-    db.session.add(new_post)
-    db.session.commit()
-    
-    flash(f'{npc.username} 계정으로 글을 올렸습니다.', 'success')
-    return redirect(url_for('admin.admin_dashboard'))
 
 @admin_bp.route('/admin/npc-system/toggle', methods=['POST'])
 @login_required
