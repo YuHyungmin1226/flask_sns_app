@@ -2,7 +2,7 @@ import random
 import json
 from datetime import datetime, timedelta
 from extensions import db
-from models import User, Post, Comment, NpcProfile, SystemSetting
+from models import User, Post, Comment, NpcProfile, SystemSetting, NpcRelationship
 from utils.npc_content import generate_npc_post, get_random_reaction
 from utils.time_utils import get_korean_time_for_db
 from utils.url_utils import URLPreviewGenerator # 수정된 임포트
