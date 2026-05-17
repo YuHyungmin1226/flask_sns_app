@@ -163,7 +163,6 @@ def generate_npc_post(npc_profile, weather_data=None):
         if content: return content, []
 
     if post_type == "news":
-...
         news = fetch_news_rss()
         if news:
             content = f"[{news['category']}] {news['title']}\n\n{news['summary']}\n\n상세보기: {news['link']}"
