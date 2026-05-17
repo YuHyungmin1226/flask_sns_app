@@ -20,8 +20,10 @@ def admin_dashboard():
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
     pending_users = User.query.filter_by(is_approved=False).all()
-    weather_bot_enabled = SystemSetting.query.get('weather_bot_enabled').value == 'True' if SystemSetting.query.get('weather_bot_enabled') else False
-    npc_system_enabled = SystemSetting.query.get('npc_system_enabled').value == 'True' if SystemSetting.query.get('npc_system_enabled') else False
+    weather_bot_setting = db.session.get(SystemSetting, 'weather_bot_enabled')
+    npc_system_setting = db.session.get(SystemSetting, 'npc_system_enabled')
+    weather_bot_enabled = weather_bot_setting.value == 'True' if weather_bot_setting else False
+    npc_system_enabled = npc_system_setting.value == 'True' if npc_system_setting else False
     
     # 최근 시스템 로그 10개 가져오기
     system_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
@@ -91,8 +93,10 @@ def export_markdown():
 @login_required
 def toggle_weather_bot():
     if current_user.username != 'admin': return jsonify({'success': False}), 403
-    setting = SystemSetting.query.get('weather_bot_enabled') or SystemSetting(key='weather_bot_enabled', value='True')
-    if not SystemSetting.query.get('weather_bot_enabled'): db.session.add(setting)
+    setting = db.session.get(SystemSetting, 'weather_bot_enabled')
+    if not setting:
+        setting = SystemSetting(key='weather_bot_enabled', value='True')
+        db.session.add(setting)
     setting.value = 'False' if setting.value == 'True' else 'True'
     db.session.commit()
     trigger_db_sync()
@@ -102,8 +106,10 @@ def toggle_weather_bot():
 @login_required
 def toggle_npc_system():
     if current_user.username != 'admin': return jsonify({'success': False}), 403
-    setting = SystemSetting.query.get('npc_system_enabled') or SystemSetting(key='npc_system_enabled', value='True')
-    if not SystemSetting.query.get('npc_system_enabled'): db.session.add(setting)
+    setting = db.session.get(SystemSetting, 'npc_system_enabled')
+    if not setting:
+        setting = SystemSetting(key='npc_system_enabled', value='True')
+        db.session.add(setting)
     setting.value = 'False' if setting.value == 'True' else 'True'
     db.session.commit()
     trigger_db_sync()
@@ -117,7 +123,7 @@ def force_npc_post(npc_id):
     npc = User.query.get_or_404(npc_id)
     if not npc.is_npc: return jsonify({'success': False, 'error': 'Not an NPC'}), 400
     
-    weather_setting = SystemSetting.query.get('current_weather')
+    weather_setting = db.session.get(SystemSetting, 'current_weather')
     weather_data = json.loads(weather_setting.value) if weather_setting else None
     
     execute_npc_post(npc, weather_data)
