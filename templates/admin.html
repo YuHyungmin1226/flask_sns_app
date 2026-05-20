@@ -216,12 +216,22 @@
 
                 <!-- 게시글 관리 상세 -->
                 <div>
-                    <h5 class="fw-bold mb-4"><i class="bi bi-file-text me-2"></i> 콘텐츠 모니터링</h5>
-                    <div class="table-responsive rounded-4 border border-light overflow-hidden">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">작성자 / 일시</th>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-file-text me-2"></i> 콘텐츠 모니터링</h5>
+                        <button type="button" class="btn btn-danger btn-sm rounded-pill px-3 shadow-sm" onclick="submitBulkDelete()">
+                            <i class="bi bi-trash me-1"></i> 선택 항목 삭제
+                        </button>
+                    </div>
+                    <form id="bulkDeleteForm" method="POST" action="{{ url_for('admin.bulk_delete_posts') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="table-responsive rounded-4 border border-light overflow-hidden">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="px-4 py-3 border-0 small text-muted text-uppercase" style="width: 40px;">
+                                            <input class="form-check-input mt-0 cursor-pointer" type="checkbox" id="selectAllPosts" onchange="toggleAllPosts(this)">
+                                        </th>
+                                        <th class="px-4 py-3 border-0 small text-muted text-uppercase">작성자 / 일시</th>
                                     <th class="px-4 py-3 border-0 small text-muted text-uppercase">내용 미리보기</th>
                                     <th class="px-4 py-3 border-0 small text-muted text-uppercase">상태</th>
                                     <th class="px-4 py-3 border-0 small text-muted text-uppercase text-end">보기</th>
@@ -230,6 +240,9 @@
                             <tbody>
                                 {% for post in posts %}
                                 <tr>
+                                    <td class="px-4 py-3">
+                                        <input class="form-check-input mt-0 cursor-pointer post-checkbox" type="checkbox" name="post_ids" value="{{ post.id }}">
+                                    </td>
                                     <td class="px-4 py-3">
                                         <div class="fw-bold">{{ post.author.username }}</div>
                                         <div class="small text-muted" style="font-size: 0.75rem;">{{ post.created_at|korean_time }}</div>
@@ -252,6 +265,7 @@
                             </tbody>
                         </table>
                     </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -356,5 +370,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function toggleAllPosts(source) {
+    checkboxes = document.querySelectorAll('.post-checkbox');
+    for(var i=0, n=checkboxes.length;i<n;i++) {
+        checkboxes[i].checked = source.checked;
+    }
+}
+
+function submitBulkDelete() {
+    var checkedBoxes = document.querySelectorAll('.post-checkbox:checked');
+    if(checkedBoxes.length === 0) {
+        alert('삭제할 게시물을 선택해주세요.');
+        return;
+    }
+    if(confirm('선택한 ' + checkedBoxes.length + '개의 게시물을 영구 삭제하시겠습니까?')) {
+        document.getElementById('bulkDeleteForm').submit();
+    }
+}
 </script>
 {% endblock %}

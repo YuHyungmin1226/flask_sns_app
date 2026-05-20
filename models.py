@@ -14,9 +14,12 @@ class User(UserMixin, db.Model):
     is_approved = db.Column(db.Boolean, default=False)
     is_npc = db.Column(db.Boolean, default=False)  # NPC 여부 구분
     
-    posts = db.relationship('Post', backref='author', lazy=True)
-    comments = db.relationship('Comment', backref='author', lazy=True)
+    posts = db.relationship('Post', backref='author', lazy=True, cascade='all, delete-orphan')
+    comments = db.relationship('Comment', backref='author', lazy=True, cascade='all, delete-orphan')
     npc_profile = db.relationship('NpcProfile', backref='user', uselist=False, cascade='all, delete-orphan')
+    
+    npc_relationships = db.relationship('NpcRelationship', foreign_keys='NpcRelationship.npc_id', backref='npc_user', lazy=True, cascade='all, delete-orphan')
+    target_relationships = db.relationship('NpcRelationship', foreign_keys='NpcRelationship.target_id', backref='target_user', lazy=True, cascade='all, delete-orphan')
 
 class NpcProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -73,5 +76,5 @@ class PushSubscription(db.Model):
     auth = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
 
-    user = db.relationship('User', backref=db.backref('push_subscriptions', lazy=True))
+    user = db.relationship('User', backref=db.backref('push_subscriptions', lazy=True, cascade='all, delete-orphan'))
 

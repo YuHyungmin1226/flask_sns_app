@@ -148,3 +148,36 @@ def post_as_npc():
     
     flash(f'{npc.username} 계정으로 글을 올렸습니다.', 'success')
     return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/admin/posts/bulk-delete', methods=['POST'])
+@login_required
+def bulk_delete_posts():
+    if current_user.username != 'admin':
+        return jsonify({'success': False}), 403
+        
+    post_ids = request.form.getlist('post_ids')
+    if not post_ids:
+        flash('삭제할 게시물을 선택해주세요.', 'warning')
+        return redirect(url_for('admin.admin_dashboard'))
+        
+    from utils.google_drive_utils import drive_manager
+    
+    deleted_count = 0
+    for pid in post_ids:
+        post = Post.query.get(pid)
+        if post:
+            if post.files:
+                try:
+                    for file_info in json.loads(post.files):
+                        if file_info.get('id'):
+                            drive_manager.delete_file(file_info.get('id'))
+                except Exception as e:
+                    print(f"파일 삭제 오류: {e}")
+            db.session.delete(post)
+            deleted_count += 1
+            
+    db.session.commit()
+    trigger_db_sync()
+    
+    flash(f'{deleted_count}개의 게시물이 일괄 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.admin_dashboard'))
