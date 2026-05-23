@@ -44,7 +44,7 @@
                      style="max-height: 600px; object-fit: cover; display: block;">
             </a>
             {% elif file.mime_type.startswith('video/') %}
-            <div class="video-preview-wrapper position-relative overflow-hidden" style="aspect-ratio: 16/9;" onclick="loadEmbeddedVideo(this, '{{ file.id }}')">
+            <a href="{{ file.view_link }}" target="_blank" class="video-preview-wrapper d-block position-relative overflow-hidden" style="aspect-ratio: 16/9; text-decoration: none;">
                 <!-- 고해상도 동영상 썸네일 -->
                 <img src="{{ url_for('main.get_thumbnail', file_id=file.id) }}" class="w-100 h-100 object-fit-cover" alt="{{ file.name }}" style="filter: brightness(0.8);">
                 
@@ -56,9 +56,9 @@
                 
                 <!-- 오버레이 안내선 -->
                 <div class="position-absolute bottom-0 start-0 w-100 p-3" style="background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); pointer-events: none;">
-                    <span class="text-white small fw-bold"><i class="bi bi-play-circle-fill me-2"></i>클릭하여 재생</span>
+                    <span class="text-white small fw-bold"><i class="bi bi-play-circle-fill me-2"></i>클릭하여 새 창에서 재생</span>
                 </div>
-            </div>
+            </a>
             <div class="px-4 py-3 bg-light border-bottom border-light d-flex align-items-center justify-content-between" style="overflow: hidden;">
                 <span class="text-truncate small fw-medium text-secondary me-3"><i class="bi bi-play-btn me-2"></i>{{ file.name }}</span>
                 <a href="{{ file.view_link }}" target="_blank" class="btn btn-white border shadow-sm btn-sm text-truncate fw-medium" style="background-color: white;">
