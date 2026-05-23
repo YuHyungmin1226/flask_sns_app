@@ -47,6 +47,12 @@
             <div class="ratio ratio-16x9">
                 <iframe src="{{ file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' }}" allowfullscreen></iframe>
             </div>
+            <div class="px-4 py-3 bg-light border-bottom border-light d-flex align-items-center justify-content-between" style="overflow: hidden;">
+                <span class="text-truncate small fw-medium text-secondary me-3"><i class="bi bi-play-btn me-2"></i>{{ file.name }}</span>
+                <a href="{{ file.view_link }}" target="_blank" class="btn btn-white border shadow-sm btn-sm text-truncate fw-medium" style="background-color: white;">
+                    보기
+                </a>
+            </div>
             {% else %}
             <div class="px-4 py-3 bg-light border-bottom border-light d-flex align-items-center justify-content-between" style="overflow: hidden;">
                 <span class="text-truncate small fw-medium text-secondary me-3"><i class="bi bi-paperclip me-2"></i>첨부파일</span>
