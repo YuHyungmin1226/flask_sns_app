@@ -276,6 +276,34 @@
             transform: translateX(4px);
             border-color: var(--primary-color) !important;
         }
+
+        /* 프리미엄 비디오 플레이스홀더 스타일 */
+        .video-preview-wrapper {
+            position: relative;
+            background-color: #000;
+            cursor: pointer;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .video-preview-wrapper img {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+        }
+
+        .video-preview-wrapper:hover img {
+            transform: scale(1.04);
+            filter: brightness(0.7) !important;
+        }
+
+        .video-preview-wrapper .custom-play-btn {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .video-preview-wrapper:hover .custom-play-btn {
+            transform: translate(-50%, -50%) scale(1.12);
+            background: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 12px 40px 0 rgba(59, 130, 246, 0.5) !important;
+        }
     </style>
 </head>
 

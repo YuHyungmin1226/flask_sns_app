@@ -44,8 +44,20 @@
                      style="max-height: 600px; object-fit: cover; display: block;">
             </a>
             {% elif file.mime_type.startswith('video/') %}
-            <div class="ratio ratio-16x9">
-                <iframe src="{{ file.embed_link if file.embed_link else 'https://drive.google.com/file/d/' + file.id + '/preview' }}" allowfullscreen></iframe>
+            <div class="video-preview-wrapper position-relative overflow-hidden" style="aspect-ratio: 16/9;" onclick="loadEmbeddedVideo(this, '{{ file.id }}')">
+                <!-- 고해상도 동영상 썸네일 -->
+                <img src="{{ url_for('main.get_thumbnail', file_id=file.id) }}" class="w-100 h-100 object-fit-cover" alt="{{ file.name }}" style="filter: brightness(0.8);">
+                
+                <!-- 글래스모피즘 플레이 버튼 -->
+                <div class="position-absolute top-50 start-50 translate-middle d-flex align-items-center justify-content-center custom-play-btn" 
+                     style="width: 72px; height: 72px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 2px solid rgba(255, 255, 255, 0.6); border-radius: 50%; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);">
+                    <i class="bi bi-play-fill text-white" style="font-size: 2.5rem; margin-left: 4px;"></i>
+                </div>
+                
+                <!-- 오버레이 안내선 -->
+                <div class="position-absolute bottom-0 start-0 w-100 p-3" style="background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); pointer-events: none;">
+                    <span class="text-white small fw-bold"><i class="bi bi-play-circle-fill me-2"></i>클릭하여 재생</span>
+                </div>
             </div>
             <div class="px-4 py-3 bg-light border-bottom border-light d-flex align-items-center justify-content-between" style="overflow: hidden;">
                 <span class="text-truncate small fw-medium text-secondary me-3"><i class="bi bi-play-btn me-2"></i>{{ file.name }}</span>

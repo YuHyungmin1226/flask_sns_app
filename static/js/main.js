@@ -62,3 +62,20 @@ window.SNS = {
         return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     }
 };
+
+/**
+ * 구글 드라이브 비디오 동적 로드 (클릭-투-플레이 플레이스홀더)
+ * @param {HTMLElement} wrapper - 비디오 프리뷰 래퍼 요소
+ * @param {string} fileId - 구글 드라이브 파일 ID
+ */
+function loadEmbeddedVideo(wrapper, fileId) {
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://drive.google.com/file/d/${fileId}/preview?autoplay=1`;
+    iframe.className = 'w-100 h-100 border-0 animate__animated animate__fadeIn';
+    iframe.allow = 'autoplay; fullscreen';
+    iframe.setAttribute('allowfullscreen', 'true');
+    
+    wrapper.innerHTML = '';
+    wrapper.removeAttribute('onclick'); // 중복 호출 방지
+    wrapper.appendChild(iframe);
+}
