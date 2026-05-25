@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, json
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, json, make_response
 from flask_login import login_required, current_user
 from extensions import db
 from models import User, Post, Comment
@@ -7,6 +7,11 @@ from utils.url_utils import URLPreviewGenerator
 from utils.google_drive_utils import drive_manager
 from concurrent.futures import ThreadPoolExecutor
 import io
+import time
+
+# 썸네일 URL 인메모리 캐시 (file_id -> {"base_url": base_url, "expire_at": timestamp})
+THUMBNAIL_CACHE = {}
+CACHE_EXPIRY_SECONDS = 3600
 
 main_bp = Blueprint('main', __name__)
 url_preview_generator = URLPreviewGenerator()
@@ -271,28 +276,54 @@ def get_thumbnail(file_id):
     """
     구글 드라이브의 임시 썸네일 링크는 몇 시간 후 만료되므로, 
     영구적인 접근을 위해 서버 측에서 리다이렉트해주는 엔드포인트입니다.
+    네트워크 레이턴시를 줄이기 위해 서버 측 인메모리 캐시 및 브라우저 Cache-Control을 적용합니다.
     """
-    try:
-        # 파일 정보 가져오기 (가장 최신의 썸네일 링크 획득)
-        file_info = drive_manager.service.files().get(
-            fileId=file_id, 
-            fields='thumbnailLink'
-        ).execute()
+    size = request.args.get('size', 400, type=int)
+    current_time = time.time()
+    base_url = None
+    
+    # 1. 서버 측 인메모리 캐시 확인
+    if file_id in THUMBNAIL_CACHE:
+        cache_data = THUMBNAIL_CACHE[file_id]
+        if current_time < cache_data['expire_at']:
+            base_url = cache_data['base_url']
+            
+    # 2. 캐시 미스 시 API 호출
+    if not base_url:
+        try:
+            # 파일 정보 가져오기 (가장 최신의 썸네일 링크 획득)
+            file_info = drive_manager.service.files().get(
+                fileId=file_id, 
+                fields='thumbnailLink'
+            ).execute()
+            
+            thumbnail_link = file_info.get('thumbnailLink')
+            if thumbnail_link:
+                # 해상도 구분을 떼어낸 베이스 URL 추출
+                if '=s' in thumbnail_link:
+                    base_url = thumbnail_link.split('=s')[0]
+                else:
+                    base_url = thumbnail_link
+                
+                # 캐시 저장
+                THUMBNAIL_CACHE[file_id] = {
+                    'base_url': base_url,
+                    'expire_at': current_time + CACHE_EXPIRY_SECONDS
+                }
+        except Exception as e:
+            print(f"썸네일 가져오기 오류: {e}")
+            
+    # 3. 리다이렉트 링크 생성 및 응답 반환
+    if base_url:
+        final_link = f"{base_url}=s{size}"
+    else:
+        # 폴백
+        final_link = f"https://drive.google.com/thumbnail?id={file_id}&sz=w{size}"
         
-        thumbnail_link = file_info.get('thumbnailLink')
-        if thumbnail_link:
-            # 해상도 조절 (기본값은 작으므로 s1000으로 확장)
-            if '=s' in thumbnail_link:
-                thumbnail_link = thumbnail_link.split('=s')[0] + '=s1000'
-            else:
-                thumbnail_link += '=s1000'
-            return redirect(thumbnail_link)
-        
-        # 썸네일이 없는 경우 (방금 업로드했거나 지원하지 않는 경우) 폴백
-        return redirect(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
-    except Exception as e:
-        print(f"썸네일 가져오기 오류: {e}")
-        return redirect(f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000")
+    response = make_response(redirect(final_link))
+    # 브라우저에 24시간(86400초) 캐시 권장
+    response.headers['Cache-Control'] = 'public, max-age=86400'
+    return response
 
 @main_bp.route('/ping')
 def ping():
