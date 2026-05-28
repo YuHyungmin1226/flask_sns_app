@@ -316,14 +316,22 @@ def get_thumbnail(file_id):
     # 3. 리다이렉트 링크 생성 및 응답 반환
     if base_url:
         final_link = f"{base_url}=s{size}"
+        response = make_response(redirect(final_link))
+        # 브라우저에 24시간(86400초) 캐시 권장
+        response.headers['Cache-Control'] = 'public, max-age=86400'
+        return response
     else:
-        # 폴백
-        final_link = f"https://drive.google.com/thumbnail?id={file_id}&sz=w{size}"
-        
-    response = make_response(redirect(final_link))
-    # 브라우저에 24시간(86400초) 캐시 권장
-    response.headers['Cache-Control'] = 'public, max-age=86400'
-    return response
+        # 폴백: 썸네일을 가져올 수 없는 경우 엑스박스 대신 안내용 SVG 플레이스홀더 반환
+        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="300" viewBox="0 0 500 300">
+            <rect width="100%" height="100%" fill="#f8f9fa"/>
+            <path d="M250 120 C 250 120, 260 110, 270 120 C 280 130, 250 150, 250 150 C 250 150, 220 130, 230 120 C 240 110, 250 120, 250 120" fill="none" stroke="#adb5bd" stroke-width="2"/>
+            <text x="50%" y="180" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#6c757d">미리보기를 준비 중이거나 제공할 수 없는 형식입니다.</text>
+        </svg>'''
+        response = make_response(svg)
+        response.headers['Content-Type'] = 'image/svg+xml'
+        # 나중에 썸네일이 생성될 수 있으므로 짧은 캐시 시간 적용
+        response.headers['Cache-Control'] = 'public, max-age=60'
+        return response
 
 @main_bp.route('/ping')
 def ping():

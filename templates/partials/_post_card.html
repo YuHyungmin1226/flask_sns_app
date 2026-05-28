@@ -37,14 +37,18 @@
     <div class="attached-files">
         {% for file in files %}
         <div class="border-top border-light">
-            {% if file.mime_type.startswith('image/') %}
+            {% set ext = file.name.lower().split('.')[-1] if '.' in file.name else '' %}
+            {% set is_image = (file.mime_type and file.mime_type.startswith('image/')) or ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'bmp'] %}
+            {% set is_video = (file.mime_type and file.mime_type.startswith('video/')) or ext in ['mp4', 'mov', 'avi', 'webm', 'mkv'] %}
+            
+            {% if is_image %}
             <a href="{{ url_for('main.view_post', post_id=post.id) }}" class="d-block bg-light" style="background-color: #f8f9fa; min-height: 200px;">
                 <img src="{{ url_for('main.get_thumbnail', file_id=file.id, size=500) }}" 
                      class="w-100" alt="{{ file.name }}" 
                      loading="lazy"
                      style="max-height: 600px; object-fit: cover; display: block; background-color: #f8f9fa;">
             </a>
-            {% elif file.mime_type.startswith('video/') %}
+            {% elif is_video %}
             <a href="{{ file.view_link }}" target="_blank" class="video-preview-wrapper d-block position-relative overflow-hidden" style="aspect-ratio: 16/9; text-decoration: none; background-color: #f8f9fa;">
                 <!-- 고해상도 동영상 썸네일 -->
                 <img src="{{ url_for('main.get_thumbnail', file_id=file.id, size=500) }}" class="w-100 h-100 object-fit-cover" alt="{{ file.name }}" loading="lazy" style="filter: brightness(0.8); background-color: #f8f9fa;">
