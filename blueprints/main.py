@@ -299,10 +299,11 @@ def get_thumbnail(file_id):
             
             thumbnail_link = file_info.get('thumbnailLink')
             if thumbnail_link:
-                # 해상도 구분을 떼어낸 베이스 URL 추출
-                if '=s' in thumbnail_link:
+                # URL 형식에 맞게 베이스 URL 추출
+                if 'googleusercontent.com' in thumbnail_link and '=s' in thumbnail_link:
                     base_url = thumbnail_link.split('=s')[0]
                 else:
+                    # 그 외 형식 (예: drive.google.com/thumbnail)은 그대로 저장
                     base_url = thumbnail_link
                 
                 # 캐시 저장
@@ -315,7 +316,16 @@ def get_thumbnail(file_id):
             
     # 3. 리다이렉트 링크 생성 및 응답 반환
     if base_url:
-        final_link = f"{base_url}=s{size}"
+        if 'googleusercontent.com' in base_url:
+            final_link = f"{base_url}=s{size}"
+        elif 'drive.google.com' in base_url:
+            import re
+            final_link = re.sub(r'sz=w\d+', f'sz=w{size}', base_url)
+            if 'sz=w' not in final_link:
+                final_link = f"{base_url}&sz=w{size}"
+        else:
+            final_link = base_url
+            
         response = make_response(redirect(final_link))
         # 브라우저에 24시간(86400초) 캐시 권장
         response.headers['Cache-Control'] = 'public, max-age=86400'
