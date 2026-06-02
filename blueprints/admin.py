@@ -20,16 +20,11 @@ def admin_dashboard():
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
     pending_users = User.query.filter_by(is_approved=False).all()
-    weather_bot_setting = db.session.get(SystemSetting, 'weather_bot_enabled')
-    npc_system_setting = db.session.get(SystemSetting, 'npc_system_enabled')
-    weather_bot_enabled = weather_bot_setting.value == 'True' if weather_bot_setting else False
-    npc_system_enabled = npc_system_setting.value == 'True' if npc_system_setting else False
     
     # 최근 시스템 로그 10개 가져오기
     system_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
     
     return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, 
-                           weather_bot_enabled=weather_bot_enabled, npc_system_enabled=npc_system_enabled,
                            system_logs=system_logs)
 
 @admin_bp.route('/admin/user/<int:user_id>/approve', methods=['POST'])
@@ -89,65 +84,6 @@ def export_markdown():
     zip_buffer.seek(0)
     return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name=f"export_{datetime.now().strftime('%Y%m%d')}.zip")
 
-@admin_bp.route('/admin/weather-bot/toggle', methods=['POST'])
-@login_required
-def toggle_weather_bot():
-    if current_user.username != 'admin': return jsonify({'success': False}), 403
-    setting = db.session.get(SystemSetting, 'weather_bot_enabled')
-    if not setting:
-        setting = SystemSetting(key='weather_bot_enabled', value='True')
-        db.session.add(setting)
-    setting.value = 'False' if setting.value == 'True' else 'True'
-    db.session.commit()
-    trigger_db_sync()
-    return jsonify({'success': True, 'enabled': setting.value == 'True'})
-
-@admin_bp.route('/admin/npc-system/toggle', methods=['POST'])
-@login_required
-def toggle_npc_system():
-    if current_user.username != 'admin': return jsonify({'success': False}), 403
-    setting = db.session.get(SystemSetting, 'npc_system_enabled')
-    if not setting:
-        setting = SystemSetting(key='npc_system_enabled', value='True')
-        db.session.add(setting)
-    setting.value = 'False' if setting.value == 'True' else 'True'
-    db.session.commit()
-    trigger_db_sync()
-    return jsonify({'success': True, 'enabled': setting.value == 'True'})
-
-@admin_bp.route('/admin/npc/<int:npc_id>/force-post', methods=['POST'])
-@login_required
-def force_npc_post(npc_id):
-    if current_user.username != 'admin': return jsonify({'success': False}), 403
-    from utils.npc_manager import execute_npc_post
-    npc = User.query.get_or_404(npc_id)
-    if not npc.is_npc: return jsonify({'success': False, 'error': 'Not an NPC'}), 400
-    
-    weather_setting = db.session.get(SystemSetting, 'current_weather')
-    weather_data = json.loads(weather_setting.value) if weather_setting else None
-    
-    execute_npc_post(npc, weather_data)
-    flash(f'{npc.username}의 게시글 작성을 강제 실행했습니다.', 'success')
-    return redirect(url_for('admin.admin_dashboard'))
-
-@admin_bp.route('/admin/npc/post-as', methods=['POST'])
-@login_required
-def post_as_npc():
-    if current_user.username != 'admin': return jsonify({'success': False}), 403
-    npc_id = request.form.get('npc_id', type=int)
-    content = request.form.get('content')
-    
-    if not content:
-        flash('내용을 입력해주세요.', 'error')
-        return redirect(url_for('admin.admin_dashboard'))
-        
-    npc = User.query.get_or_404(npc_id)
-    new_post = Post(content=content, author_id=npc.id, is_public=True)
-    db.session.add(new_post)
-    db.session.commit()
-    
-    flash(f'{npc.username} 계정으로 글을 올렸습니다.', 'success')
-    return redirect(url_for('admin.admin_dashboard'))
 
 @admin_bp.route('/admin/posts/bulk-delete', methods=['POST'])
 @login_required

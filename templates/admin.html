@@ -14,37 +14,6 @@
                     </a>
                 </div>
 
-                <!-- 시스템 자동화 제어 섹션 -->
-                <div class="row g-4 mb-5">
-                    <div class="col-md-6">
-                        <div class="p-4 rounded-4 bg-light border border-secondary border-opacity-10 shadow-sm h-100 d-flex flex-column justify-content-between">
-                            <div>
-                                <h5 class="fw-bold mb-2"><i class="bi bi-cloud-sun text-info me-2"></i>모닝 날씨 비서</h5>
-                                <div class="text-muted small mb-3">매일 아침 6시 정각에 서울 기준 일일 날씨 브리핑을 피드에 포스팅합니다.</div>
-                            </div>
-                            <div class="d-flex justify-content-end align-items-center">
-                                <span class="small fw-bold me-2 text-muted">가동 상태</span>
-                                <div class="form-check form-switch mb-0" style="font-size: 1.5rem;">
-                                    <input class="form-check-input mt-0 cursor-pointer text-info" type="checkbox" role="switch" id="weatherBotToggle" {% if weather_bot_enabled %}checked{% endif %}>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-4 rounded-4 bg-light border border-secondary border-opacity-10 shadow-sm h-100 d-flex flex-column justify-content-between">
-                            <div>
-                                <h5 class="fw-bold mb-2"><i class="bi bi-robot text-primary me-2"></i>NPC 시스템</h5>
-                                <div class="text-muted small mb-3">무작위 시간에 NPC들이 자동으로 글을 올리고 서로 댓글을 달며 활동합니다.</div>
-                            </div>
-                            <div class="d-flex justify-content-end align-items-center">
-                                <span class="small fw-bold me-2 text-muted">가동 상태</span>
-                                <div class="form-check form-switch mb-0" style="font-size: 1.5rem;">
-                                    <input class="form-check-input mt-0 cursor-pointer text-primary" type="checkbox" role="switch" id="npcSystemToggle" {% if npc_system_enabled %}checked{% endif %}>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- 통계 카드 섹션 -->
                 <div class="row g-4 mb-5">
@@ -132,44 +101,6 @@
                     </div>
                 </div>
 
-                <!-- NPC 관리 섹션 -->
-                <div class="mb-5">
-                    <h5 class="fw-bold mb-4"><i class="bi bi-cpu me-2"></i> NPC 페르소나 관리</h5>
-                    <div class="table-responsive rounded-4 border border-light overflow-hidden">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">NPC명</th>
-                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase">성격 / 활동지수</th>
-                                    <th class="px-4 py-3 border-0 small text-muted text-uppercase text-end">고급 제어</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for user in users if user.is_npc %}
-                                <tr>
-                                    <td class="px-4 py-3">
-                                        <div class="fw-bold text-primary">{{ user.username }}</div>
-                                        <div class="small text-muted">친밀도 데이터: {{ user.id }}</div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span class="badge bg-info bg-opacity-10 text-info">{{ user.npc_profile.personality }}</span>
-                                        <span class="badge bg-light text-dark">Lv.{{ user.npc_profile.activity_level }}</span>
-                                    </td>
-                                    <td class="px-4 py-3 text-end">
-                                        <div class="d-flex gap-2 justify-content-end">
-                                            <form method="POST" action="{{ url_for('admin.force_npc_post', npc_id=user.id) }}">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-sm btn-outline-primary" title="지금 즉시 글 작성">강제 활동</button>
-                                            </form>
-                                            <button type="button" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#possessionModal" data-npc-id="{{ user.id }}" data-npc-name="{{ user.username }}">빙의</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
                 <!-- 사용자 관리 상세 -->
                 <div class="mb-5">
@@ -277,103 +208,12 @@
     </div>
 </div>
 
-<!-- 빙의(NPC로 게시하기) 모달 -->
-<div class="modal fade" id="possessionModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content rounded-4 border-0">
-            <form action="{{ url_for('admin.post_as_npc') }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="npc_id" id="modalNpcId">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="fw-bold"><i class="bi bi-magic me-2"></i><span id="modalNpcName"></span> 계정으로 게시</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <textarea class="form-control bg-light border-0" name="content" rows="5" placeholder="NPC의 말투로 내용을 입력하세요..." required></textarea>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-dark px-4">게시하기</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 빙의 모달 데이터 전달
-    const possessionModal = document.getElementById('possessionModal');
-    if (possessionModal) {
-        possessionModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const npcId = button.getAttribute('data-npc-id');
-            const npcName = button.getAttribute('data-npc-name');
-            document.getElementById('modalNpcId').value = npcId;
-            document.getElementById('modalNpcName').textContent = npcName;
-        });
-    }
-
-    const weatherBotToggle = document.getElementById('weatherBotToggle');
-    if(weatherBotToggle) {
-        weatherBotToggle.addEventListener('change', function() {
-            weatherBotToggle.disabled = true;
-            fetch("{{ url_for('admin.toggle_weather_bot') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                weatherBotToggle.disabled = false;
-                if(data.success) {
-                    // Update state visually if needed
-                } else {
-                    alert(data.message || '오류가 발생했습니다.');
-                    weatherBotToggle.checked = !weatherBotToggle.checked;
-                }
-            })
-            .catch(error => {
-                weatherBotToggle.disabled = false;
-                alert('통신 오류가 발생했습니다.');
-                weatherBotToggle.checked = !weatherBotToggle.checked;
-            });
-        });
-    }
-
-    const npcSystemToggle = document.getElementById('npcSystemToggle');
-    if(npcSystemToggle) {
-        npcSystemToggle.addEventListener('change', function() {
-            npcSystemToggle.disabled = true;
-            fetch("{{ url_for('admin.toggle_npc_system') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                npcSystemToggle.disabled = false;
-                if(data.success) {
-                    // Success
-                } else {
-                    alert(data.message || '오류가 발생했습니다.');
-                    npcSystemToggle.checked = !npcSystemToggle.checked;
-                }
-            })
-            .catch(error => {
-                npcSystemToggle.disabled = false;
-                alert('통신 오류가 발생했습니다.');
-                npcSystemToggle.checked = !npcSystemToggle.checked;
-            });
-        });
-    }
 });
 
 function toggleAllPosts(source) {

@@ -134,7 +134,6 @@ def create_app():
         # 2. 테이블 생성 및 초기화
         db.create_all()
         from werkzeug.security import generate_password_hash
-        from utils.npc_manager import init_npcs # NPC 초기화 임포트
         
         admin_user = User.query.filter_by(username='admin').first()
         if not admin_user:
@@ -146,12 +145,6 @@ def create_app():
             db.session.add(admin_user)
             db.session.commit()
             print("기본 관리자 계정이 생성되었습니다.")
-        
-        # NPC 계정들 초기화
-        try:
-            init_npcs()
-        except Exception as e:
-            print(f"NPC Init Error: {e}")
 
     # 스케줄러 설정
     setup_scheduler(app)
@@ -160,30 +153,14 @@ def create_app():
 
 def setup_scheduler(app):
     from apscheduler.schedulers.background import BackgroundScheduler
-    import utils.weather_bot as weather_bot
     from utils.tasks import scheduled_db_sync_task
-    from utils.npc_manager import run_npc_cycle # NPC 사이클 임포트
-
-    def scheduled_weather_task():
-        with app.app_context():
-            try: weather_bot.fetch_and_post_weather(app, db, Post, SystemSetting, User)
-            except Exception as e: print(f"Weather Error: {e}")
 
     def sync_task():
         with app.app_context():
             scheduled_db_sync_task()
-    
-    def npc_task():
-        # NPC 활동 사이클 실행
-        try:
-            run_npc_cycle(app)
-        except Exception as e:
-            print(f"NPC Cycle Error: {e}")
 
     scheduler = BackgroundScheduler(timezone='Asia/Seoul')
-    scheduler.add_job(func=scheduled_weather_task, trigger='cron', hour=6, minute=0)
     scheduler.add_job(func=sync_task, trigger='interval', minutes=10)
-    scheduler.add_job(func=npc_task, trigger='interval', minutes=1) # 1분마다 체크 (공격적 반영)
     scheduler.start()
 
 app = create_app()
