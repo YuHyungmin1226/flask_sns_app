@@ -279,6 +279,7 @@ def get_thumbnail(file_id):
     네트워크 레이턴시를 줄이기 위해 서버 측 인메모리 캐시 및 브라우저 Cache-Control을 적용합니다.
     """
     size = request.args.get('size', 400, type=int)
+    mime_type = request.args.get('mime_type', '')
     current_time = time.time()
     base_url = None
     
@@ -291,13 +292,16 @@ def get_thumbnail(file_id):
     # 2. 캐시 미스 시 API 호출
     if not base_url:
         try:
-            # 파일 정보 가져오기 (가장 최신의 썸네일 링크 획득)
+            # 파일 정보 가져오기 (가장 최신의 썸네일 링크 및 MIME 타입 획득)
             file_info = drive_manager.service.files().get(
                 fileId=file_id, 
-                fields='thumbnailLink'
+                fields='thumbnailLink, mimeType'
             ).execute()
             
             thumbnail_link = file_info.get('thumbnailLink')
+            if not mime_type:
+                mime_type = file_info.get('mimeType', '')
+                
             if thumbnail_link:
                 # URL 형식에 맞게 베이스 URL 추출
                 if 'googleusercontent.com' in thumbnail_link:
@@ -333,12 +337,33 @@ def get_thumbnail(file_id):
         response.headers['Cache-Control'] = 'public, max-age=86400'
         return response
     else:
-        # 폴백: 썸네일을 가져올 수 없는 경우 엑스박스 대신 안내용 SVG 플레이스홀더 반환
-        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="300" viewBox="0 0 500 300">
-            <rect width="100%" height="100%" fill="#f8f9fa"/>
-            <path d="M250 120 C 250 120, 260 110, 270 120 C 280 130, 250 150, 250 150 C 250 150, 220 130, 230 120 C 240 110, 250 120, 250 120" fill="none" stroke="#adb5bd" stroke-width="2"/>
-            <text x="50%" y="180" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#6c757d">미리보기를 준비 중이거나 제공할 수 없는 형식입니다.</text>
-        </svg>'''
+        # 폴백: 썸네일을 가져올 수 없는 경우 파일 타입에 맞는 아름다운 플레이스홀더 SVG 반환
+        is_video = mime_type.startswith('video/') if mime_type else False
+        is_image = mime_type.startswith('image/') if mime_type else False
+        
+        if is_video:
+            svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="300" viewBox="0 0 500 300">
+                <rect width="100%" height="100%" fill="#f1f5f9"/>
+                <circle cx="250" cy="130" r="35" fill="#cbd5e1"/>
+                <polygon points="242,117 242,143 265,130" fill="#ffffff"/>
+                <text x="50%" y="195" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="600" fill="#64748b">동영상 미리보기를 준비하고 있습니다.</text>
+                <text x="50%" y="220" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#94a3b8">잠시 후 새로고침 해주세요.</text>
+            </svg>'''
+        elif is_image:
+            svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="300" viewBox="0 0 500 300">
+                <rect width="100%" height="100%" fill="#f1f5f9"/>
+                <path d="M200 160 L230 120 L260 160 L280 135 L310 170 Z" fill="#cbd5e1"/>
+                <circle cx="285" cy="115" r="10" fill="#cbd5e1"/>
+                <text x="50%" y="210" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#64748b">이미지 미리보기를 불러올 수 없습니다.</text>
+            </svg>'''
+        else:
+            svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="300" viewBox="0 0 500 300">
+                <rect width="100%" height="100%" fill="#f8f9fa"/>
+                <path d="M250 100 L270 120 L270 160 L230 160 L230 100 Z" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                <path d="M250 100 L250 120 L270 120" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                <text x="50%" y="200" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#64748b">미리보기를 제공하지 않는 형식입니다.</text>
+            </svg>'''
+            
         response = make_response(svg.encode('utf-8'))
         response.headers['Content-Type'] = 'image/svg+xml; charset=utf-8'
         # 나중에 썸네일이 생성될 수 있으므로 짧은 캐시 시간 적용
