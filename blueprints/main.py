@@ -300,8 +300,10 @@ def get_thumbnail(file_id):
             thumbnail_link = file_info.get('thumbnailLink')
             if thumbnail_link:
                 # URL 형식에 맞게 베이스 URL 추출
-                if 'googleusercontent.com' in thumbnail_link and '=s' in thumbnail_link:
-                    base_url = thumbnail_link.split('=s')[0]
+                if 'googleusercontent.com' in thumbnail_link:
+                    import re
+                    # =sXXX, =wXXX, =hXXX 등을 제거하여 순수한 베이스 URL 획득
+                    base_url = re.split(r'=[swh]\d+', thumbnail_link)[0]
                 else:
                     # 그 외 형식 (예: drive.google.com/thumbnail)은 그대로 저장
                     base_url = thumbnail_link
