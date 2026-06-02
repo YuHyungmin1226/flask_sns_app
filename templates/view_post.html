@@ -111,10 +111,10 @@
                             </div>
                         </div>
                         {% else %}
-                        <div class="url-preview mb-4 border rounded overflow-hidden shadow-sm">
+                        <div class="url-preview mb-4 border rounded overflow-hidden shadow-sm{% if preview.image_url %} has-image{% endif %}">
                             {% if preview.image_url %}
-                            <div class="url-preview-image-container bg-light bg-opacity-50">
-                                <img src="{{ preview.image_url }}" class="img-fluid w-100 object-fit-cover" style="max-height: 250px;" alt="{{ preview.title }}" loading="lazy">
+                            <div class="url-preview-image-container">
+                                <img src="{{ preview.image_url }}" alt="{{ preview.title }}" loading="lazy">
                             </div>
                             {% endif %}
                             <div class="p-3">

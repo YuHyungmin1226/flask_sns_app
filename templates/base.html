@@ -128,6 +128,57 @@
             background-color: var(--bs-card-bg);
             margin-bottom: 1.5rem;
             transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .url-preview:hover, .youtube-preview:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .url-preview-image-container {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background-color: var(--bg-light);
+        }
+
+        .url-preview-image-container img {
+            width: 100% !important;
+            height: 100% !important;
+            max-height: none !important;
+            object-fit: cover !important;
+            display: block;
+        }
+
+        .url-preview .p-3 {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .url-preview h6 {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.25rem;
+        }
+
+        .text-truncate-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .youtube-preview-container {
@@ -154,6 +205,18 @@
             width: 100%;
             object-fit: cover;
             max-height: 450px;
+        }
+
+        @media (min-width: 576px) {
+            .url-preview.has-image {
+                flex-direction: row;
+                height: 150px;
+            }
+
+            .url-preview.has-image .url-preview-image-container {
+                width: 180px;
+                height: 100%;
+            }
         }
 
         .youtube-preview .youtube-info {

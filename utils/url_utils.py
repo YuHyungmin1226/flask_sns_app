@@ -46,6 +46,29 @@ class URLPreviewGenerator:
                 return match.group(1)
         return None
     
+    def _safe_request(self, method: str, url: str, **kwargs) -> requests.Response:
+        """SSL 검증 실패 시 검증 없이 재시도하는 안전한 HTTP 요청 메서드"""
+        if 'headers' not in kwargs:
+            kwargs['headers'] = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = 10
+            
+        try:
+            # 1차 시도: 표준 요청 (SSL 검증 포함)
+            return requests.request(method, url, **kwargs)
+        except (requests.exceptions.SSLError, requests.exceptions.ConnectionError):
+            # 2차 시도: SSL 검증 해제 후 재시도
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            kwargs['verify'] = False
+            try:
+                return requests.request(method, url, **kwargs)
+            except Exception as e:
+                print(f"안전한 요청 실패 ({url}): {e}")
+                raise e
+
     def get_youtube_data(self, video_id: str) -> Optional[Dict]:
         """YouTube 데이터 추출 (oEmbed API 사용)"""
         try:
@@ -54,7 +77,7 @@ class URLPreviewGenerator:
             }
             # YouTube oEmbed API 사용
             oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
-            response = requests.get(oembed_url, headers=headers, timeout=10)
+            response = self._safe_request('GET', oembed_url, timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
@@ -71,7 +94,7 @@ class URLPreviewGenerator:
                 thumbnail_url = None
                 for url in thumbnail_urls:
                     try:
-                        thumb_response = requests.head(url, headers=headers, timeout=5)
+                        thumb_response = self._safe_request('HEAD', url, timeout=5)
                         if thumb_response.status_code == 200:
                             thumbnail_url = url
                             break
@@ -114,14 +137,40 @@ class URLPreviewGenerator:
                 self.cache[cache_key] = (time.time(), youtube_data)
                 return youtube_data
         
+        # URL 확장자가 이미지 포맷인지 확인 (빠른 처리)
+        parsed_url = urlparse(url)
+        path = parsed_url.path.lower()
+        if any(path.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']):
+            preview_data = {
+                'url': url,
+                'type': 'image',
+                'title': self._get_domain_name(url),
+                'description': '',
+                'image_url': url,
+                'site_name': self._get_domain_name(url)
+            }
+            self.cache[cache_key] = (time.time(), preview_data)
+            return preview_data
+
         # 일반 웹사이트 처리
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            response = requests.get(url, headers=headers, timeout=10)
+            response = self._safe_request('GET', url, stream=True, timeout=10)
             response.raise_for_status()
             
+            # Content-Type이 이미지인 경우 직접 이미지 미리보기 생성
+            content_type = response.headers.get('Content-Type', '')
+            if content_type.startswith('image/'):
+                preview_data = {
+                    'url': url,
+                    'type': 'image',
+                    'title': self._get_domain_name(url),
+                    'description': '',
+                    'image_url': url,
+                    'site_name': self._get_domain_name(url)
+                }
+                self.cache[cache_key] = (time.time(), preview_data)
+                return preview_data
+                
             soup = BeautifulSoup(response.content, 'html.parser')
             preview_data = self._extract_metadata(soup, url)
             
