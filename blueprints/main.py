@@ -337,8 +337,8 @@ def get_thumbnail(file_id):
             <path d="M250 120 C 250 120, 260 110, 270 120 C 280 130, 250 150, 250 150 C 250 150, 220 130, 230 120 C 240 110, 250 120, 250 120" fill="none" stroke="#adb5bd" stroke-width="2"/>
             <text x="50%" y="180" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#6c757d">미리보기를 준비 중이거나 제공할 수 없는 형식입니다.</text>
         </svg>'''
-        response = make_response(svg)
-        response.headers['Content-Type'] = 'image/svg+xml'
+        response = make_response(svg.encode('utf-8'))
+        response.headers['Content-Type'] = 'image/svg+xml; charset=utf-8'
         # 나중에 썸네일이 생성될 수 있으므로 짧은 캐시 시간 적용
         response.headers['Cache-Control'] = 'public, max-age=60'
         return response

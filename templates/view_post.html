@@ -57,7 +57,7 @@
                                 {% elif file.mime_type.startswith('video/') %}
                                 <a href="{{ file.view_link }}" target="_blank" class="video-preview-wrapper d-block position-relative overflow-hidden" style="aspect-ratio: 16/9; text-decoration: none; background-color: #f8f9fa;">
                                     <!-- 고해상도 동영상 썸네일 -->
-                                    <img src="{{ url_for('main.get_thumbnail', file_id=file.id, size=1000) }}" class="w-100 h-100 object-fit-cover" alt="{{ file.name }}" loading="lazy" style="filter: brightness(0.8); background-color: #f8f9fa;">
+                                    <img src="{{ url_for('main.get_thumbnail', file_id=file.id, size=1000) }}" class="w-100 h-100 object-fit-contain" alt="{{ file.name }}" loading="lazy" style="filter: brightness(0.8); background-color: #f8f9fa;">
                                     
                                     <!-- 글래스모피즘 플레이 버튼 -->
                                     <div class="position-absolute top-50 start-50 translate-middle d-flex align-items-center justify-content-center custom-play-btn" 
