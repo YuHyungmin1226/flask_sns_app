@@ -112,20 +112,6 @@ def create_app():
             inspector = inspect(db.engine)
             existing_tables = inspector.get_table_names()
 
-            # user 테이블 패치
-            if 'user' in existing_tables:
-                columns = [c['name'] for c in inspector.get_columns('user')]
-                if 'is_npc' not in columns:
-                    print("[Patch] user 테이블에 is_npc 컬럼을 추가합니다.")
-                    db.session.execute(db.text('ALTER TABLE "user" ADD COLUMN is_npc BOOLEAN DEFAULT FALSE'))
-            
-            # npc_profile 테이블 패치
-            if 'npc_profile' in existing_tables:
-                columns = [c['name'] for c in inspector.get_columns('npc_profile')]
-                if 'memory' not in columns:
-                    print("[Patch] npc_profile 테이블에 memory 컬럼을 추가합니다.")
-                    db.session.execute(db.text('ALTER TABLE "npc_profile" ADD COLUMN memory TEXT DEFAULT \'{}\''))
-            
             db.session.commit()
         except Exception as e:
             db.session.rollback()

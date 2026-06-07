@@ -12,32 +12,9 @@ class User(UserMixin, db.Model):
     locked_until = db.Column(db.DateTime)
     password_changed = db.Column(db.Boolean, default=False)
     is_approved = db.Column(db.Boolean, default=False)
-    is_npc = db.Column(db.Boolean, default=False)  # NPC 여부 구분
     
     posts = db.relationship('Post', backref='author', lazy=True, cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='author', lazy=True, cascade='all, delete-orphan')
-    npc_profile = db.relationship('NpcProfile', backref='user', uselist=False, cascade='all, delete-orphan')
-    
-    npc_relationships = db.relationship('NpcRelationship', foreign_keys='NpcRelationship.npc_id', backref='npc_user', lazy=True, cascade='all, delete-orphan')
-    target_relationships = db.relationship('NpcRelationship', foreign_keys='NpcRelationship.target_id', backref='target_user', lazy=True, cascade='all, delete-orphan')
-
-class NpcProfile(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    personality = db.Column(db.String(50), default='friendly')  # friendly, witty, serious 등
-    activity_level = db.Column(db.Integer, default=5)  # 1~10 활동성 (높을수록 자주 포스팅)
-    preferred_topics = db.Column(db.Text, default='[]')  # 선호하는 주제 (JSON)
-    last_post_at = db.Column(db.DateTime)
-    last_comment_at = db.Column(db.DateTime)
-    next_action_at = db.Column(db.DateTime)  # 다음 무작위 활동 예정 시간
-    memory = db.Column(db.Text, default='{}')  # NPC의 현재 상태, 기억 (JSON)
-
-class NpcRelationship(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    npc_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    target_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    affinity = db.Column(db.Integer, default=0)  # 친밀도 (댓글, 반응 시 상승)
-    last_interaction = db.Column(db.DateTime, default=get_korean_time_for_db)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
