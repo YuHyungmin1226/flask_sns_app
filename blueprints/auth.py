@@ -24,6 +24,11 @@ def reset_login_attempts(user):
     user.locked_until = None
     db.session.commit()
 
+def is_strong_password(password):
+    if not password or len(password) < 8:
+        return False
+    return any(c.isalpha() for c in password) and any(c.isdigit() for c in password)
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -77,6 +82,10 @@ def register():
             flash('비밀번호가 일치하지 않습니다.', 'error')
             return render_template('register.html')
         
+        if not is_strong_password(password):
+            flash('비밀번호는 최소 8자 이상이어야 하며, 영문자와 숫자를 모두 포함해야 합니다.', 'error')
+            return render_template('register.html')
+        
         if User.query.filter_by(username=username).first():
             flash('이미 존재하는 사용자명입니다.', 'error')
             return render_template('register.html')
@@ -111,8 +120,8 @@ def change_password():
             flash('새 비밀번호가 일치하지 않습니다.', 'error')
             return render_template('change_password.html')
         
-        if len(new_password) < 6:
-            flash('비밀번호는 최소 6자 이상이어야 합니다.', 'error')
+        if not is_strong_password(new_password):
+            flash('비밀번호는 최소 8자 이상이어야 하며, 영문자와 숫자를 모두 포함해야 합니다.', 'error')
             return render_template('change_password.html')
         
         current_user.password_hash = generate_password_hash(new_password)

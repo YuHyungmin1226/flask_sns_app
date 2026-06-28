@@ -367,6 +367,19 @@
             border-color: var(--primary-color) !important;
             box-shadow: 0 12px 40px 0 rgba(59, 130, 246, 0.5) !important;
         }
+
+        .btn-navbar-custom {
+            background-color: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-main);
+            transition: var(--transition);
+        }
+
+        .btn-navbar-custom:hover, .btn-navbar-custom:focus {
+            background-color: var(--border-light);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
     </style>
 </head>
 
@@ -395,7 +408,7 @@
                     <!-- 알림 토글 (모바일에서도 항상 표시) -->
                     {% if current_user.is_authenticated %}
                     <div class="d-flex align-items-center ms-auto me-2 d-lg-none">
-                        <button id="push-toggle-btn-mobile" class="btn btn-outline-light btn-sm push-btn-trigger" title="알림 설정">
+                        <button id="push-toggle-btn-mobile" class="btn btn-navbar-custom btn-sm push-btn-trigger" title="알림 설정">
                             <i class="bi bi-bell"></i>
                         </button>
                     </div>
@@ -434,7 +447,7 @@
                                 </ul>
                             </li>
                             <li class="nav-item">
-                                <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" title="다크모드 토글">
+                                <button class="btn btn-navbar-custom btn-sm theme-toggle-btn" onclick="toggleTheme()" title="다크모드 토글">
                                     <i class="bi bi-moon-stars"></i>
                                     <span class="sr-only">다크모드 토글</span>
                                 </button>
@@ -455,7 +468,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" title="다크모드 토글">
+                                <button class="btn btn-navbar-custom btn-sm theme-toggle-btn" onclick="toggleTheme()" title="다크모드 토글">
                                     <i class="bi bi-moon-stars"></i>
                                     <span class="sr-only">다크모드 토글</span>
                                 </button>
@@ -503,10 +516,10 @@
             localStorage.setItem('theme', newTheme);
 
             // 아이콘 변경
-            const icon = document.querySelector('.btn-outline-light i');
-            if (icon) {
+            const icons = document.querySelectorAll('.theme-toggle-btn i');
+            icons.forEach(icon => {
                 icon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
-            }
+            });
         }
 
         // 유튜브 비디오 재생 함수 (전역)
@@ -565,10 +578,10 @@
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-bs-theme', savedTheme);
 
-            const icon = document.querySelector('.btn-outline-light i');
-            if (icon) {
+            const icons = document.querySelectorAll('.theme-toggle-btn i');
+            icons.forEach(icon => {
                 icon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
-            }
+            });
         });
 
         // 플래시 메시지 자동 숨김
@@ -594,11 +607,11 @@
             function updateBtnUI(isSubscribed) {
                 pushBtns.forEach(btn => {
                     if (isSubscribed) {
-                        btn.classList.replace('btn-outline-light', 'btn-primary');
+                        btn.classList.replace('btn-navbar-custom', 'btn-primary');
                         btn.innerHTML = '<i class="bi bi-bell-fill"></i>';
                         btn.title = '알림 끄기';
                     } else {
-                        btn.classList.replace('btn-primary', 'btn-outline-light');
+                        btn.classList.replace('btn-primary', 'btn-navbar-custom');
                         btn.innerHTML = '<i class="bi bi-bell"></i>';
                         btn.title = '알림 켜기';
                     }

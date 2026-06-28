@@ -5,7 +5,7 @@ import threading
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload, MediaFileUpload
 from dotenv import load_dotenv
 
 class GoogleDriveManager:
@@ -141,7 +141,7 @@ class GoogleDriveManager:
         
         try:
             file_id = self.find_file_id(filename)
-            media = MediaIoBaseUpload(local_db_path, mimetype='application/x-sqlite3', resumable=True)
+            media = MediaFileUpload(local_db_path, mimetype='application/x-sqlite3', resumable=True)
             
             if file_id:
                 # 파일 업데이트

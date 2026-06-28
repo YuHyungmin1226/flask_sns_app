@@ -13,11 +13,18 @@ Google Drive 연동 기능을 갖춘 개인용 SNS 애플리케이션입니다. 
 
 ## 시작하기
 
-### 1. 사전 준비
-이 프로젝트는 Google Drive API를 사용합니다. `scripts/get_refresh_token.py`를 사용하여 다음 정보를 준비해야 합니다:
-- GOOGLE_CLIENT_ID
-- GOOGLE_CLIENT_SECRET
-- GOOGLE_REFRESH_TOKEN
+이 프로젝트는 Google Drive API 및 웹 푸시 알림을 사용합니다. 다음 스크립트들을 사용해 설정 키들을 준비해야 합니다:
+
+1. **Google OAuth2 토큰 생성**:
+   `scripts/get_refresh_token.py`를 사용하여 다음 정보를 얻을 수 있습니다:
+   - GOOGLE_CLIENT_ID
+   - GOOGLE_CLIENT_SECRET
+   - GOOGLE_REFRESH_TOKEN
+
+2. **Web Push VAPID 키 쌍 생성**:
+   `scripts/generate_vapid_keys.py`를 실행하여 다음 키들을 발급받을 수 있습니다:
+   - VAPID_PUBLIC_KEY
+   - VAPID_PRIVATE_KEY
 
 ### 2. 환경 변수 설정
 `.env.example` 파일을 복사하여 `.env` 파일을 생성하고 필수 정보를 입력합니다.

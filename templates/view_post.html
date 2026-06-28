@@ -154,8 +154,18 @@
                         {% for comment in post.comments %}
                         <div class="comment-item bg-white p-4 rounded-4 shadow-sm border border-light border-opacity-50">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="fw-bold text-main">{{ comment.author.username }}</span>
-                                <small class="text-muted" style="font-size: 0.75rem;">{{ comment.created_at|korean_time }}</small>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold text-main">{{ comment.author.username }}</span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ comment.created_at|korean_time }}</small>
+                                </div>
+                                {% if current_user.id == comment.author_id or current_user.username == 'admin' %}
+                                <form method="POST" action="{{ url_for('main.delete_comment', post_id=post.id, comment_id=comment.id) }}" class="inline-form" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" title="댓글 삭제">
+                                        <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
                             </div>
                             <div class="comment-content" style="white-space: pre-wrap; color: var(--text-main); line-height: 1.6;">{{ comment.content }}</div>
                         </div>
@@ -178,7 +188,6 @@
         </div>
         </div>
     </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
@@ -190,6 +199,7 @@
         const formData = new FormData(form);
         const submitBtn = form.querySelector('button[type="submit"]');
         const textarea = form.querySelector('textarea');
+        const csrfToken = form.querySelector('input[name="csrf_token"]').value;
         
         submitBtn.disabled = true;
         
@@ -211,8 +221,16 @@
                 const commentHtml = `
                     <div class="comment-item bg-white p-4 rounded-4 shadow-sm border border-light border-opacity-50 animate__animated animate__fadeIn">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="fw-bold text-main">${data.comment.author}</span>
-                            <small class="text-muted" style="font-size: 0.75rem;">${data.comment.created_at}</small>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold text-main">${data.comment.author}</span>
+                                <small class="text-muted" style="font-size: 0.75rem;">${data.comment.created_at}</small>
+                            </div>
+                            <form method="POST" action="/post/{{ post.id }}/comment/${data.comment.id}/delete" class="inline-form" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                                <input type="hidden" name="csrf_token" value="${csrfToken}">
+                                <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" title="댓글 삭제">
+                                    <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
+                                </button>
+                            </form>
                         </div>
                         <div class="comment-content" style="white-space: pre-wrap; color: var(--text-main); line-height: 1.6;">${data.comment.content}</div>
                     </div>

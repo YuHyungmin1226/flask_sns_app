@@ -100,7 +100,7 @@ def bulk_delete_posts():
     
     deleted_count = 0
     for pid in post_ids:
-        post = Post.query.get(pid)
+        post = Post.query.get(int(pid))
         if post:
             if post.files:
                 try:

@@ -138,11 +138,11 @@ def new_post():
                 url_previews.append(preview)
         
         if not content and not uploaded_files:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': '내용을 입력하거나 파일을 첨부해 주세요.'}), 400
             flash('내용을 입력하거나 파일을 첨부해 주세요.', 'error')
             return render_template('new_post.html')
             
-        from utils.tasks import trigger_db_sync
-        trigger_db_sync()
         post = Post(
             content=content,
             author_id=current_user.id,
@@ -152,6 +152,7 @@ def new_post():
         )
         db.session.add(post)
         db.session.commit()
+        trigger_db_sync()
 
         # 푸시 알림 전송 (백그라운드)
         def notify_new_post(post_id, author_id, author_name):
@@ -230,12 +231,27 @@ def add_comment(post_id):
             'success': True,
             'message': '댓글이 작성되었습니다!',
             'comment': {
+                'id': comment.id,
                 'author': current_user.username,
                 'content': content,
                 'created_at': '방금 전'
             }
         })
         
+    return redirect(url_for('main.view_post', post_id=post_id))
+
+@main_bp.route('/post/<int:post_id>/comment/<int:comment_id>/delete', methods=['POST'])
+@login_required
+def delete_comment(post_id, comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    if comment.author_id != current_user.id and current_user.username != 'admin':
+        flash('삭제 권한이 없습니다.', 'error')
+        return redirect(url_for('main.view_post', post_id=post_id))
+    
+    db.session.delete(comment)
+    db.session.commit()
+    trigger_db_sync()
+    flash('댓글이 삭제되었습니다.', 'success')
     return redirect(url_for('main.view_post', post_id=post_id))
 
 @main_bp.route('/post/<int:post_id>/delete', methods=['POST'])
@@ -313,6 +329,15 @@ def get_thumbnail(file_id):
                     base_url = thumbnail_link
                 
                 # 캐시 저장
+                if len(THUMBNAIL_CACHE) >= 1000:
+                    for k, v in list(THUMBNAIL_CACHE.items()):
+                        if current_time >= v['expire_at']:
+                            del THUMBNAIL_CACHE[k]
+                    if len(THUMBNAIL_CACHE) >= 1000:
+                        sorted_keys = sorted(THUMBNAIL_CACHE.keys(), key=lambda k: THUMBNAIL_CACHE[k]['expire_at'])
+                        for k in sorted_keys[:(len(THUMBNAIL_CACHE) - 999)]:
+                            if k in THUMBNAIL_CACHE:
+                                del THUMBNAIL_CACHE[k]
                 THUMBNAIL_CACHE[file_id] = {
                     'base_url': base_url,
                     'expire_at': current_time + CACHE_EXPIRY_SECONDS

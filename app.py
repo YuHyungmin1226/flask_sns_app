@@ -59,7 +59,7 @@ def create_app():
     csp = {
         'default-src': '\'self\'',
         'script-src': ['\'self\'', 'https://cdn.jsdelivr.net', '\'unsafe-inline\''],
-        'style-src': ['\'self\'', 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com', '\'unsafe-inline\''],
+        'style-src': ['\'self\'', 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com', '\'unsafe-inline\''],
         'font-src': ['\'self\'', 'https://cdn.jsdelivr.net', 'https://fonts.gstatic.com'],
         'img-src': ['\'self\'', 'data:', 'https://*.googleusercontent.com', 'https://drive.google.com', 'https://docs.google.com', 'https://*.gstatic.com', 'https://*.youtube.com', 'https://*.ytimg.com', 'https://img.youtube.com', 'https://i.ytimg.com'],
         'frame-src': ['\'self\'', 'https://drive.google.com', 'https://*.youtube.com', 'https://www.youtube.com', 'https://youtube.com'],
@@ -108,10 +108,48 @@ def create_app():
     with app.app_context():
         # 1. 누락된 컬럼 자동 패치 (마이그레이션 도구 대용)
         try:
-            from sqlalchemy import inspect
+            from sqlalchemy import inspect, text
             inspector = inspect(db.engine)
             existing_tables = inspector.get_table_names()
-
+            is_pg = (db.engine.dialect.name == 'postgresql')
+            
+            user_table_original = next((t for t in existing_tables if t.lower() == 'user'), None)
+            if user_table_original:
+                existing_cols = [c['name'].lower() for c in inspector.get_columns(user_table_original)]
+                user_columns_to_patch = {
+                    'username': 'VARCHAR(80)',
+                    'password_hash': 'VARCHAR(120)',
+                    'created_at': 'TIMESTAMP',
+                    'last_login': 'TIMESTAMP',
+                    'login_attempts': 'INTEGER DEFAULT 0',
+                    'locked_until': 'TIMESTAMP',
+                    'password_changed': 'BOOLEAN DEFAULT FALSE' if is_pg else 'BOOLEAN DEFAULT 0',
+                    'is_approved': 'BOOLEAN DEFAULT FALSE' if is_pg else 'BOOLEAN DEFAULT 0'
+                }
+                user_table_quoted = f'"{user_table_original}"' if (is_pg or user_table_original.lower() == 'user') else user_table_original
+                for col_name, col_type in user_columns_to_patch.items():
+                    if col_name.lower() not in existing_cols:
+                        db.session.execute(text(f"ALTER TABLE {user_table_quoted} ADD COLUMN {col_name} {col_type}"))
+                        print(f"[Patch] Added column {col_name} to {user_table_quoted}")
+            
+            post_table_original = next((t for t in existing_tables if t.lower() == 'post'), None)
+            if post_table_original:
+                existing_cols = [c['name'].lower() for c in inspector.get_columns(post_table_original)]
+                post_columns_to_patch = {
+                    'content': 'TEXT',
+                    'author_id': 'INTEGER',
+                    'created_at': 'TIMESTAMP',
+                    'updated_at': 'TIMESTAMP',
+                    'is_public': 'BOOLEAN DEFAULT TRUE' if is_pg else 'BOOLEAN DEFAULT 1',
+                    'url_previews': "TEXT DEFAULT '[]'",
+                    'files': "TEXT DEFAULT '[]'"
+                }
+                post_table_quoted = f'"{post_table_original}"' if (is_pg or post_table_original.lower() == 'post') else post_table_original
+                for col_name, col_type in post_columns_to_patch.items():
+                    if col_name.lower() not in existing_cols:
+                        db.session.execute(text(f"ALTER TABLE {post_table_quoted} ADD COLUMN {col_name} {col_type}"))
+                        print(f"[Patch] Added column {col_name} to {post_table_quoted}")
+            
             db.session.commit()
         except Exception as e:
             db.session.rollback()
