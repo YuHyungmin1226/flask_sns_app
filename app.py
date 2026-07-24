@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 # 내부 모듈 임포트
 from extensions import db, login_manager, csrf
-from models import User, Post, SystemSetting
+from models import User, Post
 from utils.google_drive_utils import drive_manager
 from utils.tasks import set_db_path, trigger_db_sync
 from utils.time_utils import KST

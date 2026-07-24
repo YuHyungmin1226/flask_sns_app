@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 from flask_login import login_required, current_user
 from extensions import db
-from models import User, Post, SystemSetting, SystemLog
+from models import User, Post, SystemLog
 from utils.tasks import trigger_db_sync
 import zipfile
 

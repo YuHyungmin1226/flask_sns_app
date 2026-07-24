@@ -35,10 +35,6 @@ class Comment(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
 
-class SystemSetting(db.Model):
-    key = db.Column(db.String(50), primary_key=True)
-    value = db.Column(db.Text, nullable=True)
-
 class SystemLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     level = db.Column(db.String(20), default='info') # info, warning, error
