@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 from flask_login import login_required, current_user
 from extensions import db
-from models import User, Post, SystemLog
+from models import User, Post
 from utils.tasks import trigger_db_sync
 import zipfile
 
@@ -20,12 +20,8 @@ def admin_dashboard():
     users = User.query.all()
     posts = Post.query.order_by(Post.created_at.desc()).all()
     pending_users = User.query.filter_by(is_approved=False).all()
-    
-    # 최근 시스템 로그 10개 가져오기
-    system_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
-    
-    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users, 
-                           system_logs=system_logs)
+
+    return render_template('admin.html', users=users, posts=posts, pending_users=pending_users)
 
 @admin_bp.route('/admin/user/<int:user_id>/approve', methods=['POST'])
 @login_required

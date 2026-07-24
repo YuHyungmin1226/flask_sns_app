@@ -35,12 +35,6 @@ class Comment(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
 
-class SystemLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    level = db.Column(db.String(20), default='info') # info, warning, error
-    message = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=get_korean_time_for_db)
-
 class PushSubscription(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
